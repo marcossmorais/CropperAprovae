@@ -8,15 +8,46 @@ Ferramenta local para recortar e revisar as figuras das questões de prova a par
 ## Requisitos
 
 - Python 3.11+
-- `pip install -r requirements.txt`
+- `pip install -r requirements.txt` (PyMuPDF; `pywebview` é opcional e dá a janela própria)
 
 ## Uso
 
+**Como aplicativo** (janela própria, sem terminal e sem navegador): `python criar_atalho.py` uma vez cria o atalho
+"System 4.0 Image" na Área de Trabalho e no menu Iniciar. Ele roda `pythonw app.py`, que sobe o servidor numa porta
+livre dentro do próprio processo e abre uma janela nativa (WebView2, que já vem no Windows). Fechou a janela, fechou
+tudo. O `abrir_system4_image.bat` faz o mesmo. Erros ficam em `app.log`.
+
+**No navegador** (modo de desenvolvimento): `python server.py` (porta 8765, ou `--port`/`PORT`).
+
+### Telas
+
+- **Provas**: lista os PDFs da pasta escolhida (botão *Escolher pasta…*, com pastas recentes), agrupados por
+  subpasta, com o estado de cada um: questões no JSON, progresso da revisão e última gravação. *Buscar no acervo* e
+  *Enviar PDF…* continuam como antes.
+- **Revisão**: grade de 3 colunas; *Páginas* (tecla `P`) mostra a prova inteira ao lado com os recortes marcados
+  (clicar num recorte seleciona o cartão e vice-versa; *✂ Recortar aqui* em cada página). *+ Recorte em outra
+  questão* (tecla `N`) cria recorte para qualquer questão, inclusive as que não estão na grade.
+- **Gravar no JSON…**: mostra antes de gravar o que muda em cada questão (no JSON agora × depois), a data de
+  modificação e o último backup de cada JSON, a última gravação feita por aqui, e deixa escolher as questões e se
+  espelha na prova irmã (OP1/OP2). O histórico fica no `manifest.json` (`exportacoes`).
+
+### Segunda opinião por IA (opcional)
+
+Um modelo de layout (Docling, licença MIT, roda local na CPU, sem custo de API) olha cada página e a tela avisa
+quando ele discorda do motor: **possível figura sem recorte** e **geometria duvidosa** (só em recorte pendente). A IA
+nunca recorta sozinha: *Usar área da IA* abre o recorte com a área marcada, e *Dispensar* esconde a sugestão. Roda
+sozinha em segundo plano depois de processar uma prova (~1 s por página); o botão *Rodar IA* roda de novo.
+Avaliação e regras: [`docs/avaliacao_hibrido.md`](docs/avaliacao_hibrido.md).
+
+Instalação (venv separado, porque o Docling puxa o PyTorch):
+
 ```bash
-python server.py
+python -m venv .venv-ai
+.venv-ai/Scripts/python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+.venv-ai/Scripts/python -m pip install pymupdf docling
 ```
 
-No Windows, `abrir_system4_image.bat` faz o mesmo.
+Sem o `.venv-ai`, o botão some e tudo funciona como antes.
 
 CLI do motor:
 

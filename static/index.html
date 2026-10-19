@@ -8,24 +8,27 @@
 :root{
   --bg:#f6f7f9; --sf:#ffffff; --sf2:#f0f2f5; --bd:#e2e5ea; --tx:#14181f; --tm:#5f6b7a;
   --ac:#2563eb; --ac-s:#dbe7fe; --ok:#0f9d58; --ok-s:#d7f3e3; --bad:#d93025; --bad-s:#fde3e1;
-  --wr:#b26a00; --wr-s:#fff1d6; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
-  --r:10px; --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+  --wr:#b26a00; --wr-s:#fff1d6; --gr:#9aa3af; --ia:#7c3aed; --ia-s:#efe7fe; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --r:10px; --mono:ui-monospace,"Cascadia Code",Consolas,monospace; --hh:0px; --pw:40vw;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0f1218; --sf:#171b23; --sf2:#1e232d; --bd:#2a303c; --tx:#e8ebf0; --tm:#97a1b0;
   --ac:#6b9bff; --ac-s:#1c2a48; --ok:#34c77b; --ok-s:#143323; --bad:#ff6b5e; --bad-s:#3b1714;
-  --wr:#f0b04a; --wr-s:#3a2a10; --shadow:none; color-scheme:dark}}
+  --wr:#f0b04a; --wr-s:#3a2a10; --gr:#5b6472; --ia:#b69cff; --ia-s:#2a1f45; --shadow:none; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1218; --sf:#171b23; --sf2:#1e232d; --bd:#2a303c; --tx:#e8ebf0; --tm:#97a1b0;
   --ac:#6b9bff; --ac-s:#1c2a48; --ok:#34c77b; --ok-s:#143323; --bad:#ff6b5e; --bad-s:#3b1714;
-  --wr:#f0b04a; --wr-s:#3a2a10; --shadow:none; color-scheme:dark}
+  --wr:#f0b04a; --wr-s:#3a2a10; --gr:#5b6472; --ia:#b69cff; --ia-s:#2a1f45; --shadow:none; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
-button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--sf);border-radius:8px;padding:6px 11px}
+button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--sf);border-radius:8px;padding:6px 11px;white-space:nowrap}
 button:hover{border-color:var(--tm)}
 button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
 button.pri:hover{filter:brightness(1.07)}
+button.on{background:var(--ac-s);border-color:var(--ac);color:var(--ac)}
+button.ghost{border-color:transparent;background:transparent}
+button.ghost:hover{background:var(--sf2)}
 button:disabled{opacity:.5;cursor:default}
 input,select{font:inherit;color:inherit;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
 header{position:sticky;top:0;z-index:20;background:var(--sf);border-bottom:1px solid var(--bd);box-shadow:var(--shadow)}
@@ -36,29 +39,67 @@ header{position:sticky;top:0;z-index:20;background:var(--sf);border-bottom:1px s
 .stats{display:flex;gap:6px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:var(--sf2);color:var(--tm);font-size:12.5px;white-space:nowrap}
 .chip b{color:var(--tx);font-variant-numeric:tabular-nums}
-.chip.ok{background:var(--ok-s);color:var(--ok)} .chip.bad{background:var(--bad-s);color:var(--bad)} .chip.wr{background:var(--wr-s);color:var(--wr)}
+.chip.ok{background:var(--ok-s);color:var(--ok)} .chip.bad{background:var(--bad-s);color:var(--bad)} .chip.wr{background:var(--wr-s);color:var(--wr)} .chip.ac{background:var(--ac-s);color:var(--ac)}
 .filters{display:flex;gap:6px;padding:0 18px 10px;flex-wrap:wrap;align-items:center}
 .filters button{padding:4px 10px;font-size:13px}
-.filters button.on{background:var(--ac-s);border-color:var(--ac);color:var(--ac)}
-main{padding:18px;max-width:1700px;margin:0 auto}
+.help{color:var(--tm);font-size:12px}
 .empty{color:var(--tm);text-align:center;padding:80px 20px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+[hidden]{display:none!important}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--bd);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--sf2)}
+.ptitle{font-weight:600;max-width:40ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- biblioteca */
+.folder{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 320px;background:var(--sf2);border-radius:8px;padding:4px 4px 4px 10px}
+.folder .path{font-family:var(--mono);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left;flex:1;min-width:0}
+.lib{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;padding:18px;max-width:1500px;margin:0 auto}
+.side{position:sticky;top:calc(var(--hh) + 18px);align-self:start;max-height:calc(100vh - var(--hh) - 36px);overflow:auto;display:flex;flex-direction:column;gap:2px}
+.side button{text-align:left;border:0;border-radius:6px;display:flex;gap:8px;align-items:center;padding:6px 9px;background:transparent}
+.side button:hover{background:var(--sf2)}
+.side button.on{background:var(--ac-s);color:var(--ac)}
+.side .n{margin-left:auto;font-size:12px;color:var(--tm);font-variant-numeric:tabular-nums}
+.side h4{margin:4px 9px 6px;font-size:12px;color:var(--tm);text-transform:uppercase;letter-spacing:.04em}
+.libtools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.libtools input{flex:1;min-width:200px}
+.grp{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.grp h3{margin:0;padding:9px 14px;font-size:13.5px;background:var(--sf2);border-bottom:1px solid var(--bd);display:flex;gap:8px;align-items:center}
+.grp h3 .help{font-weight:400}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.4fr) minmax(0,.9fr) 190px;gap:12px;align-items:center;padding:9px 14px;border-top:1px solid var(--bd)}
+.grp h3+.row{border-top:0}
+.row.click{cursor:pointer}
+.row.click:hover{background:var(--sf2)}
+.row .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sub{font-size:12px;color:var(--tm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .acts2{display:flex;gap:6px;justify-content:flex-end}
+.row .acts2 button{padding:4px 10px;font-size:13px}
+.prog{display:flex;height:7px;border-radius:99px;overflow:hidden;background:var(--sf2);margin-bottom:3px}
+.prog i{display:block;height:100%}
+.prog .a{background:var(--ok)} .prog .p{background:var(--wr)} .prog .r{background:var(--bad)} .prog .h{background:var(--gr)}
+.tag{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--sf2);color:var(--tm);white-space:nowrap}
+.tag.ok{background:var(--ok-s);color:var(--ok)} .tag.wr{background:var(--wr-s);color:var(--wr)} .tag.bad{background:var(--bad-s);color:var(--bad)} .tag.ac{background:var(--ac-s);color:var(--ac)}
+
+/* ---------- revisão */
+.rev{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.rev.pages-on{grid-template-columns:minmax(0,1fr) var(--pw)}
+.revmain{padding:18px;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
 .card h3{margin:0;font-size:14px;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd)}
 .card h3 .pg{color:var(--tm);font-weight:400;font-size:12.5px}
+.card h3 .pg.link{cursor:pointer;text-decoration:underline dotted}
 .warns{display:flex;flex-direction:column;gap:4px;padding:8px 12px 0}
 .warn{font-size:12.5px;color:var(--wr);background:var(--wr-s);border-radius:6px;padding:3px 8px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:10px 12px}
-.tile{border:2px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--sf2);display:flex;flex-direction:column;outline:none}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:10px 12px}
+.tile{border:2px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--sf2);display:flex;flex-direction:column;outline:none;min-width:0}
 .tile.sel{box-shadow:0 0 0 3px var(--ac-s);border-color:var(--ac)}
 .tile.aprovado{border-color:var(--ok)} .tile.rejeitado{border-color:var(--bad);opacity:.55} .tile.herdado{border-style:dashed;opacity:.7}
-.tile .img{background:#fff;display:flex;align-items:center;justify-content:center;height:150px;cursor:zoom-in}
-.tile img{max-width:100%;max-height:150px;display:block}
-.tile .meta{display:flex;align-items:center;gap:6px;padding:5px 7px;font-size:12px;color:var(--tm)}
+.tile .img{background:#fff;display:flex;align-items:center;justify-content:center;height:130px;cursor:zoom-in}
+.tile img{max-width:100%;max-height:130px;display:block}
+.tile .meta{display:flex;align-items:center;gap:6px;padding:5px 7px;font-size:12px;color:var(--tm);flex-wrap:wrap}
+.tile .meta .ex{margin-left:auto}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
 .dot.h{background:var(--ok)} .dot.m{background:var(--wr)} .dot.l{background:var(--bad)}
 .role{font-weight:600;color:var(--tx)}
-.flags{font-size:11.5px;color:var(--tm);padding:0 7px 4px;min-height:0}
+.flags{font-size:11.5px;color:var(--tm);padding:0 7px 4px}
 .acts{display:flex;border-top:1px solid var(--bd)}
 .acts button{flex:1;border:0;border-radius:0;background:transparent;padding:5px 0;font-size:13px}
 .acts button+button{border-left:1px solid var(--bd)}
@@ -74,7 +115,35 @@ main{padding:18px;max-width:1700px;margin:0 auto}
 .sect{margin:26px 0 10px;font-size:13px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.04em}
 .ign{display:flex;flex-wrap:wrap;gap:6px}
 .ign button{font-size:12px}
-/* modal */
+
+/* painel de páginas */
+.pages{position:sticky;top:var(--hh);height:calc(100vh - var(--hh));overflow:auto;border-left:1px solid var(--bd);background:var(--sf2);padding:12px;display:none}
+.rev.pages-on .pages{display:block}
+.pagestool{display:flex;gap:6px;align-items:center;margin-bottom:10px;position:sticky;top:-12px;background:var(--sf2);padding:6px 0;z-index:2}
+.pagestool button{padding:3px 9px;font-size:12.5px}
+.pgfig{margin:0 0 14px}
+.pgfig figcaption{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tm);margin-bottom:4px}
+.pgfig figcaption button{padding:2px 8px;font-size:12px;margin-left:auto}
+.pgstage{position:relative;background:#fff;line-height:0;box-shadow:var(--shadow);border-radius:4px;overflow:hidden}
+.pgstage img{width:100%;display:block}
+.ov{position:absolute;border:2px solid var(--wr);background:rgba(178,106,0,.08);cursor:pointer;line-height:1.2}
+.ov.aprovado{border-color:var(--ok);background:rgba(15,157,88,.08)} .ov.rejeitado{border-color:var(--bad);background:rgba(217,48,37,.06);border-style:dotted}
+.ov.herdado{border-color:var(--gr);border-style:dashed;background:transparent}
+.ov.sel{border-color:var(--ac);background:rgba(37,99,235,.16);box-shadow:0 0 0 3px rgba(37,99,235,.35)}
+.ov span{position:absolute;top:-1px;left:-1px;background:inherit;font-size:10.5px;padding:0 4px;color:#fff;background:var(--wr);border-bottom-right-radius:4px}
+.ov.aprovado span{background:var(--ok)} .ov.rejeitado span{background:var(--bad)} .ov.herdado span{background:var(--gr)} .ov.sel span{background:var(--ac)}
+
+/* sugestões da IA */
+.iasug{padding:8px 12px 0;display:flex;flex-direction:column;gap:4px}
+.ia{font-size:12.5px;color:var(--ia);background:var(--ia-s);border-radius:6px;padding:4px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ia .b{margin-left:auto;display:flex;gap:4px}
+.ia button{padding:1px 7px;font-size:12px}
+button.iabtn{border-color:var(--ia);color:var(--ia)}
+button.iabtn.on{background:var(--ia-s)}
+.ov.ia{border:2px dashed var(--ia);background:rgba(124,58,237,.08)}
+.ov.ia span{background:var(--ia)}
+
+/* ---------- modal */
 .modal{position:fixed;inset:0;background:rgba(10,14,20,.6);display:none;z-index:50;align-items:center;justify-content:center;padding:16px}
 .modal.on{display:flex}
 .box{background:var(--sf);border:1px solid var(--bd);border-radius:12px;max-width:min(1100px,100%);width:100%;max-height:100%;display:flex;flex-direction:column;overflow:hidden}
@@ -87,54 +156,114 @@ main{padding:18px;max-width:1700px;margin:0 auto}
 .sel-rect{position:absolute;border:2px solid var(--ac);background:rgba(37,99,235,.12);pointer-events:none}
 .old-rect{position:absolute;border:2px dashed var(--wr);pointer-events:none}
 .pdflist{display:flex;flex-direction:column;gap:2px;max-height:55vh;overflow:auto;margin-top:10px}
-.pdflist button{text-align:left;border:0;border-radius:6px;display:flex;gap:8px;align-items:center;padding:6px 8px}
+.pdflist button{text-align:left;border:0;border-radius:6px;display:flex;gap:8px;align-items:center;padding:6px 8px;white-space:normal}
 .pdflist button:hover{background:var(--sf2)}
-.pdflist .tag{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--sf2);color:var(--tm)}
-.pdflist .tag.ok{background:var(--ok-s);color:var(--ok)}
 .zoom img{max-width:100%;background:#fff}
+.lbl{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.lbl input[type=number]{width:80px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 .toast.on{opacity:1}
 .busy{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:70;display:none;align-items:center;justify-content:center;color:#fff;font-size:15px}
 .busy.on{display:flex}
-kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--bd);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--sf2)}
-.help{color:var(--tm);font-size:12px}
-@media (max-width:600px){.bar{padding:10px 16px}.filters{padding:0 16px 10px}main{padding:16px}.grid{grid-template-columns:1fr}}
+
+/* gravação */
+.xsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.xbox{background:var(--sf2);border-radius:8px;padding:10px 12px;font-size:13px}
+.xbox b{display:block;font-size:12px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+.xbox .mono{font-family:var(--mono);font-size:12px;word-break:break-all}
+.qpick{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 14px}
+.qpick label{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--bd);border-radius:999px;padding:2px 9px 2px 6px;font-size:12.5px;cursor:pointer;font-variant-numeric:tabular-nums}
+.qpick label.off{opacity:.5}
+.qpick label.chg{border-color:var(--ac)}
+.jcard{border:1px solid var(--bd);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.jcard.off .jbody{opacity:.4}
+.jhead{display:flex;gap:10px;align-items:center;padding:9px 12px;background:var(--sf2);flex-wrap:wrap}
+.jhead .fn{font-weight:600}
+.jhead .help{flex-basis:100%}
+.jbody{padding:4px 12px 10px}
+.dq{border-top:1px solid var(--bd);padding:8px 0}
+.dq:first-child{border-top:0}
+.dq .qh{display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px}
+.dq .qh button{margin-left:auto;padding:2px 8px;font-size:12px;font-weight:400}
+.dt{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;table-layout:fixed}
+.dt td{padding:3px 6px;vertical-align:top;word-break:break-word}
+.dt td:first-child{width:130px;color:var(--tm)}
+.dt .old{background:var(--bad-s)} .dt .new{background:var(--ok-s)}
+.dt ul{margin:0;padding-left:16px}
+pre.raw{background:var(--sf2);border-radius:6px;padding:8px;font-size:11.5px;max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:6px 0 0}
+
+@media (max-width:1200px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rev.pages-on .grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){.lib{grid-template-columns:1fr}.side{position:static;max-height:none;flex-direction:row;flex-wrap:wrap}.row{grid-template-columns:1fr;gap:4px}.row .acts2{justify-content:flex-start}.rev.pages-on{grid-template-columns:1fr}.pages{position:static;height:auto;border-left:0}}
+@media (max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){.bar{padding:10px 16px}.filters{padding:0 16px 10px}.revmain,.lib{padding:16px}}
 </style>
 </head>
 <body>
-<header>
+<header id="hdr">
   <div class="bar">
     <div class="brand">System <span>4.0</span> Image</div>
-    <select id="prova" title="Prova processada"></select>
-    <button id="btnImport" class="pri">Importar PDF</button>
-    <div class="stats" id="stats"></div>
+    <!-- biblioteca -->
+    <div class="folder" data-v="lib" title="Pasta onde ficam as provas">
+      <span>📁</span><span class="path" id="libPath"></span>
+      <select id="libRecent" title="Pastas recentes" style="max-width:34px;padding:4px"></select>
+      <button id="btnPick" class="pri">Escolher pasta…</button>
+    </div>
+    <button data-v="lib" id="btnImport" title="Buscar um PDF em todo o acervo (Documentos)">Buscar no acervo</button>
+    <label data-v="lib" class="lbl" style="position:relative"><button type="button" id="btnUpload" title="Enviar um PDF de qualquer lugar do computador">Enviar PDF…</button><input type="file" id="pdfFile" accept="application/pdf" hidden></label>
+    <!-- revisão -->
+    <button data-v="rev" id="btnBack" title="Voltar para a lista de provas">← Provas</button>
+    <span data-v="rev" class="ptitle" id="revTitle"></span>
+    <div data-v="rev" class="stats" id="stats"></div>
     <div class="grow"></div>
-    <button id="btnBulk" title="Aprova todos os recortes pendentes com confiança alta">Aprovar alta confiança</button>
-    <button id="btnExport" class="pri">Exportar aprovados</button>
-    <button id="btnTheme" title="Tema claro/escuro">◐</button>
+    <button data-v="rev" id="btnIA" class="iabtn" title="Segunda opinião: modelo de layout (Docling) rodando no seu computador, sem custo">Rodar IA</button>
+    <button data-v="rev" id="btnPages" title="Mostrar as páginas da prova ao lado (P)">▤ Páginas</button>
+    <button data-v="rev" id="btnNewQ" title="Criar recorte para uma questão que não aparece na grade (N)">+ Recorte em outra questão</button>
+    <button data-v="rev" id="btnBulk" title="Aprova todos os recortes pendentes com confiança alta">Aprovar alta confiança</button>
+    <button data-v="rev" id="btnExport" class="pri">Gravar no JSON…</button>
+    <button id="btnTheme" class="ghost" title="Tema claro/escuro">◐</button>
   </div>
-  <div class="filters" id="filters">
+  <div class="filters" id="filters" data-v="rev">
     <button data-f="todas" class="on">Todas</button>
     <button data-f="pendente">Pendentes</button>
     <button data-f="baixa">Confiança baixa/média</button>
     <button data-f="alertas">Com alerta</button>
     <button data-f="aprovado">Aprovadas</button>
+    <button data-f="naoexp">Aprovadas não gravadas</button>
     <button data-f="rejeitado">Rejeitadas</button>
+    <button data-f="tabela">Tabelas</button>
+    <button data-f="ia">Sugestões da IA</button>
     <button data-f="semimg">Sem imagem</button>
     <button data-f="herdado">Herdadas</button>
     <span class="grow"></span>
-    <span class="help"><kbd>J</kbd>/<kbd>K</kbd> navegar · <kbd>A</kbd> aprovar · <kbd>R</kbd> rejeitar · <kbd>C</kbd> recortar · <kbd>Z</kbd> ampliar</span>
+    <span class="help"><kbd>J</kbd>/<kbd>K</kbd> navegar · <kbd>A</kbd> aprovar · <kbd>R</kbd> rejeitar · <kbd>C</kbd> recortar · <kbd>Z</kbd> ampliar · <kbd>P</kbd> páginas · <kbd>N</kbd> novo recorte</span>
   </div>
 </header>
-<main id="main"><div class="empty">Carregando…</div></main>
+
+<div id="viewLib" class="lib">
+  <nav class="side" id="side"></nav>
+  <div>
+    <div class="libtools">
+      <input id="libSearch" placeholder="Filtrar por nome (ex.: CFS1 2021 OP1)">
+      <div id="libFilters" style="display:flex;gap:6px;flex-wrap:wrap">
+        <button data-lf="todas" class="on">Todas</button>
+        <button data-lf="nova">Não processadas</button>
+        <button data-lf="revisao">Em revisão</button>
+        <button data-lf="gravada">Gravadas</button>
+      </div>
+    </div>
+    <div id="libList"><div class="empty">Carregando…</div></div>
+  </div>
+</div>
+
+<div id="viewRev" class="rev" hidden>
+  <main class="revmain" id="main"></main>
+  <aside class="pages" id="pages"></aside>
+</div>
 
 <div class="modal" id="mImport"><div class="box">
-  <div class="hd"><h2>Importar PDF</h2><span class="grow"></span><button data-close>Fechar</button></div>
+  <div class="hd"><h2>Buscar PDF no acervo</h2><span class="grow"></span><button data-close>Fechar</button></div>
   <div class="bd">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <input id="pdfSearch" placeholder="Buscar prova em Documentos (ex.: EEAR 2021 CFS1)" style="flex:1;min-width:220px">
-      <label class="help">ou enviar arquivo: <input type="file" id="pdfFile" accept="application/pdf"></label>
-    </div>
+    <input id="pdfSearch" placeholder="Buscar prova em Documentos (ex.: EEAR 2021 CFS1)" style="width:100%">
     <div class="pdflist" id="pdfList"></div>
   </div>
 </div></div>
@@ -142,13 +271,21 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--bd);border-bot
 <div class="modal" id="mCrop"><div class="box">
   <div class="hd">
     <h2 id="cropTitle">Recortar</h2>
-    <button id="pgPrev">◀ página</button><span id="pgLbl" class="help"></span><button id="pgNext">página ▶</button>
+    <label class="lbl" id="cropQWrap">Questão <input id="cropQ" type="number" min="1" list="qlist"></label>
+    <datalist id="qlist"></datalist>
     <select id="cropRole"><option value="enunciado">Enunciado</option><option value="alt">Alternativa</option><option value="texto_base">Texto-base</option></select>
     <select id="cropLetter"><option>a</option><option>b</option><option>c</option><option>d</option><option>e</option></select>
+    <button id="pgPrev">◀</button><span id="pgLbl" class="help"></span><button id="pgNext">▶</button>
     <span class="grow"></span><button data-close>Cancelar</button>
   </div>
   <div class="bd" style="text-align:center"><div class="stage" id="stage"><img id="pageImg" alt="Página da prova" draggable="false"><div class="old-rect" id="oldRect"></div><div class="sel-rect" id="selRect" hidden></div></div></div>
-  <div class="ft"><span class="help">Arraste para marcar a área. O recorte é refeito do PDF a 150 DPI. <kbd>Enter</kbd> salva · <kbd>Esc</kbd> cancela</span><span class="grow"></span><button id="cropSave" class="pri" disabled>Salvar recorte</button></div>
+  <div class="ft"><span class="help">Arraste para marcar a área. O recorte é refeito do PDF a 150 DPI e já entra como aprovado. <kbd>Enter</kbd> salva · <kbd>Esc</kbd> cancela</span><span class="grow"></span><button id="cropSave" class="pri" disabled>Salvar recorte</button></div>
+</div></div>
+
+<div class="modal" id="mExport"><div class="box">
+  <div class="hd"><h2>Gravar no JSON</h2><span class="help" id="xSub"></span><span class="grow"></span><button data-close>Cancelar</button></div>
+  <div class="bd" id="xBody"></div>
+  <div class="ft"><span class="help" id="xFoot"></span><span class="grow"></span><button data-close>Cancelar</button><button id="xGo" class="pri">Gravar</button></div>
 </div></div>
 
 <div class="modal" id="mZoom"><div class="box"><div class="hd"><h2 id="zoomTitle"></h2><span class="grow"></span><button data-close>Fechar</button></div><div class="bd zoom" style="text-align:center"><img id="zoomImg" alt=""></div></div></div>
@@ -157,9 +294,10 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--bd);border-bot
 
 <script>
 const $ = s => document.querySelector(s);
-let M = null, PID = null, FILTER = 'todas', SEL = null, PDFS = [];
+const $$ = s => [...document.querySelectorAll(s)];
+let M = null, PID = null, FILTER = 'todas', SEL = null, PDFS = [], LIB = null, LIBSIDE = '', LIBF = 'todas', VIEW = 'lib';
 const api = async (url, body) => {
-  const r = await fetch(url, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body: body instanceof Blob ? body : JSON.stringify(body)});
+  const r = await fetch(url, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
   const j = await r.json(); if (!r.ok) throw new Error(j.erro || r.statusText); return j;
 };
 const toast = (t, ms=2600) => { const e=$('#toast'); e.textContent=t; e.classList.add('on'); clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove('on'), ms); };
@@ -169,57 +307,179 @@ const lvl = c => c >= .85 ? 'h' : c >= .6 ? 'm' : 'l';
 const lvlTxt = {h:'alta', m:'média', l:'baixa'};
 const roleTxt = c => c.role === 'alt' ? `Alternativa ${c.letter?.toUpperCase()}` : c.role === 'texto_base' ? 'Texto-base' : 'Enunciado';
 const imgUrl = (f, v) => `/ws/${encodeURIComponent(PID)}/${f}?v=${v||1}`;
+const store = {get: k => { try { return localStorage.getItem(k); } catch(e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} }};
+const fmtDate = s => { if (!s) return '—'; const d = new Date(s.length === 15 ? s.replace(/(\d{4})(\d\d)(\d\d)_(\d\d)(\d\d)(\d\d)/, '$1-$2-$3T$4:$5:$6') : s); return isNaN(d) ? s : d.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}); };
 
-try { const t = localStorage.getItem('s4i-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e) {}
+{ const t = store.get('s4i-theme'); if (t) document.documentElement.dataset.theme = t; }
 $('#btnTheme').onclick = () => {
   const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  const nx = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = nx;
-  try { localStorage.setItem('s4i-theme', nx); } catch(e) {}
+  const nx = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = nx; store.set('s4i-theme', nx);
+};
+const syncHH = () => document.documentElement.style.setProperty('--hh', $('#hdr').offsetHeight + 'px');
+new ResizeObserver(syncHH).observe($('#hdr'));
+
+function setView(v) {
+  VIEW = v;
+  $$('[data-v]').forEach(e => e.hidden = e.dataset.v !== v);
+  $('#viewLib').hidden = v !== 'lib'; $('#viewRev').hidden = v !== 'rev';
+  syncHH();
+}
+
+// ======================================================================= biblioteca
+async function loadLib(pasta) {
+  $('#libList').innerHTML = '<div class="empty">Lendo a pasta…</div>';
+  const cfg = await api('/api/config');
+  if (pasta && pasta !== cfg.pasta) await api('/api/config', {pasta});
+  LIB = await api('/api/library' + (pasta ? '?pasta=' + encodeURIComponent(pasta) : ''));
+  const rec = (await api('/api/config')).recentes || [];
+  $('#libPath').textContent = LIB.pasta; $('#libPath').title = LIB.pasta;
+  $('#libRecent').innerHTML = '<option value="">▾</option>' + rec.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  $('#libRecent').hidden = rec.length < 2;
+  if (!LIB.grupos.some(g => topOf(g.pasta) === LIBSIDE)) LIBSIDE = '';
+  renderLib();
+}
+const topOf = p => p ? p.split('/')[0] : '(esta pasta)';
+function stateOf(it) {
+  if (!it.ws) return 'nova';
+  return it.ws.ultima_exportacao || it.ws.exportados ? 'gravada' : 'revisao';
+}
+function renderLib() {
+  if (!LIB) return;
+  const terms = $('#libSearch').value.toLowerCase().split(/\s+/).filter(Boolean);
+  const match = (g, it) => terms.every(t => (g.pasta + '/' + it.nome).toLowerCase().includes(t)) && (LIBF === 'todas' || stateOf(it) === LIBF);
+  // lateral: primeiro nível de subpasta
+  const tops = {};
+  for (const g of LIB.grupos) for (const it of g.itens) if (match(g, it)) { const t = topOf(g.pasta); tops[t] = tops[t] || {n:0, ws:0}; tops[t].n++; if (it.ws) tops[t].ws++; }
+  const names = Object.keys(tops).sort((a,b) => a.localeCompare(b, 'pt'));
+  const total = names.reduce((s, t) => s + tops[t].n, 0);
+  $('#side').innerHTML = `<h4>Subpastas</h4><button data-side="" class="${LIBSIDE === '' ? 'on' : ''}">Todas<span class="n">${total}</span></button>` +
+    names.map(t => `<button data-side="${esc(t)}" class="${LIBSIDE === t ? 'on' : ''}" title="${tops[t].ws} já processadas">${esc(t)}<span class="n">${tops[t].ws ? tops[t].ws + '/' : ''}${tops[t].n}</span></button>`).join('');
+  let html = '';
+  for (const g of LIB.grupos) {
+    if (LIBSIDE && topOf(g.pasta) !== LIBSIDE) continue;
+    const its = g.itens.filter(it => match(g, it)); if (!its.length) continue;
+    html += `<section class="grp"><h3>📁 ${esc(g.pasta || '(raiz da pasta)')} <span class="help">${its.length} PDF${its.length > 1 ? 's' : ''}</span></h3>`;
+    for (const it of its) html += rowHtml(it);
+    html += '</section>';
+  }
+  $('#libList').innerHTML = html || `<div class="empty">Nenhum PDF ${terms.length || LIBF !== 'todas' ? 'neste filtro' : 'nesta pasta'}.</div>`;
+}
+function rowHtml(it) {
+  const w = it.ws, st = stateOf(it);
+  const json = it.json ? `<div>${it.questoes ?? '?'} questões</div><div class="sub" title="${esc(it.json)}">${it.com_imagem ?? 0} com imagem no JSON</div>` : '<span class="tag bad">sem JSON</span>';
+  let rv = '<span class="tag">não processada</span>';
+  if (w) {
+    const tot = Math.max(1, w.recortes), pc = n => (n / tot * 100).toFixed(1) + '%';
+    rv = w.recortes ? `<div class="prog" title="verde aprovados · laranja pendentes · vermelho rejeitados · cinza herdados"><i class="a" style="width:${pc(w.aprovados)}"></i><i class="p" style="width:${pc(w.pendentes)}"></i><i class="r" style="width:${pc(w.rejeitados)}"></i><i class="h" style="width:${pc(w.herdados)}"></i></div>
+      <div class="sub">${w.recortes} recortes · ${w.pendentes ? `<b style="color:var(--wr)">${w.pendentes} pendentes</b>` : 'nada pendente'}${w.alertas ? ` · ${w.alertas} alertas` : ''}</div>` : `<div class="sub">nenhum recorte detectado · ${w.alertas} alertas</div>`;
+  }
+  const ux = w?.ultima_exportacao;
+  const gv = ux ? `<span class="tag ok">gravada</span><div class="sub">${fmtDate(ux.em)}</div>` : w?.exportados ? `<span class="tag ok">gravada</span><div class="sub">${w.exportados} recortes</div>` : '<span class="help">—</span>';
+  return `<div class="row ${w ? 'click' : ''}" ${w ? `data-open="${esc(w.prova_id)}"` : ''}>
+    <div><div class="nm" title="${esc(it.path)}">${esc(it.nome.replace(/\.pdf$/i, ''))}</div><div class="sub">${w ? 'processada em ' + fmtDate(w.criado_em) : ''}</div></div>
+    <div>${json}</div><div>${rv}</div><div>${gv}</div>
+    <div class="acts2">${w ? `<button class="pri" data-open="${esc(w.prova_id)}">Abrir</button><button data-proc="${esc(it.path)}" title="Varre o PDF de novo (mantém o que você já aprovou e os recortes manuais)">Reprocessar</button>` : `<button class="pri" data-proc="${esc(it.path)}">Processar</button>`}</div>
+  </div>`;
+}
+$('#side').onclick = e => { const b = e.target.closest('[data-side]'); if (!b) return; LIBSIDE = b.dataset.side; renderLib(); window.scrollTo(0, 0); };
+$('#libSearch').oninput = renderLib;
+$$('#libFilters [data-lf]').forEach(b => b.onclick = () => { LIBF = b.dataset.lf; $$('#libFilters [data-lf]').forEach(x => x.classList.toggle('on', x === b)); renderLib(); });
+$('#libList').onclick = async e => {
+  const p = e.target.closest('[data-proc]');
+  if (p) { e.stopPropagation(); return processPdf(p.dataset.proc); }
+  const o = e.target.closest('[data-open]'); if (o) openProva(o.dataset.open);
+};
+$('#btnPick').onclick = async () => {
+  busy(true, 'Escolha a pasta na janela que abriu…');
+  try { const r = await api('/api/pick_folder', {inicial: LIB?.pasta}); if (r.pasta) { LIBSIDE = ''; await loadLib(r.pasta); } }
+  catch(err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); }
+};
+$('#libRecent').onchange = e => { if (e.target.value) { LIBSIDE = ''; loadLib(e.target.value); } };
+
+async function processPdf(path) {
+  busy(true, 'Varrendo o PDF e recortando…');
+  try { const s = await api('/api/process', {pdf: path}); PDFS = []; toast(`${s.recortes} recortes gerados · ${s.alertas} questões com alerta.`, 4000); await openProva(s.prova_id); }
+  catch(err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); }
+}
+
+// buscar no acervo (lista plana de Documentos)
+$('#btnImport').onclick = async () => {
+  $('#mImport').classList.add('on'); $('#pdfSearch').focus();
+  if (!PDFS.length) PDFS = await api('/api/pdfs');
+  renderPdfs();
+};
+$('#pdfSearch').oninput = renderPdfs;
+function renderPdfs() {
+  const terms = $('#pdfSearch').value.toLowerCase().split(/\s+/).filter(Boolean);
+  const list = PDFS.filter(p => terms.every(t => p.rel.toLowerCase().includes(t))).slice(0, 300);
+  $('#pdfList').innerHTML = list.map(p => `<button data-pdf="${esc(p.path)}"><span style="flex:1">${esc(p.rel)}</span>${p.json ? '<span class="tag">JSON</span>' : '<span class="tag bad">sem JSON</span>'}${p.processada ? '<span class="tag ok">processada</span>' : ''}</button>`).join('') || '<div class="help">Nada encontrado.</div>';
+}
+$('#pdfList').onclick = e => { const b = e.target.closest('[data-pdf]'); if (!b) return; closeModals(); processPdf(b.dataset.pdf); };
+$('#btnUpload').onclick = () => $('#pdfFile').click();
+$('#pdfFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  busy(true, 'Enviando e processando…');
+  try {
+    const r = await fetch('/api/upload?name=' + encodeURIComponent(f.name), {method:'POST', body: f});
+    const s = await r.json(); if (!r.ok) throw new Error(s.erro);
+    toast(`${s.recortes} recortes gerados.`); await openProva(s.prova_id);
+  } catch(err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); e.target.value = ''; }
 };
 
-async function loadProvas(select) {
-  const ps = await api('/api/provas');
-  const sel = $('#prova');
-  sel.innerHTML = ps.length ? ps.map(p => `<option value="${esc(p.prova_id)}">${esc(p.prova_id)} — ${p.recortes} recortes</option>`).join('') : '<option value="">(nenhuma prova processada)</option>';
-  let want = select;
-  if (!want) { try { want = localStorage.getItem('s4i-prova'); } catch(e) {} }
-  if (want && ps.some(p => p.prova_id === want)) sel.value = want;
-  if (sel.value) await openProva(sel.value); else { $('#main').innerHTML = '<div class="empty">Nenhuma prova ainda. Clique em <b>Importar PDF</b>.</div>'; renderStats(); }
-}
-$('#prova').onchange = e => openProva(e.target.value);
-
+// ======================================================================= revisão
 async function openProva(pid) {
-  PID = pid; try { localStorage.setItem('s4i-prova', pid); } catch(e) {}
+  PID = pid; store.set('s4i-prova', pid);
   M = await api('/api/manifest?prova=' + encodeURIComponent(pid));
-  render();
+  if (location.hash !== '#prova=' + encodeURIComponent(pid)) history.pushState(null, '', '#prova=' + encodeURIComponent(pid));
+  $('#revTitle').textContent = pid; $('#revTitle').title = M.pdf;
+  $('#qlist').innerHTML = Object.keys(M.questions).map(n => `<option value="${n}">`).join('');
+  setView('rev'); window.scrollTo(0, 0);
+  IA = {status: 'carregando'};
+  render(); renderPages(); loadIA();
 }
+function backToLib() { clearTimeout(IAT); M = null; PID = null; history.pushState(null, '', location.pathname); setView('lib'); loadLib(); }
+$('#btnBack').onclick = backToLib;
+window.onpopstate = () => { const m = location.hash.match(/^#prova=(.+)$/); if (m) openProva(decodeURIComponent(m[1])); else { setView('lib'); loadLib(); } };
 
 function renderStats() {
   if (!M) { $('#stats').innerHTML = ''; return; }
   const cs = M.crops, n = s => cs.filter(c => c.status === s).length;
   const qs = Object.values(M.questions);
+  const naoexp = cs.filter(c => c.status === 'aprovado' && !c.exportado).length;
   $('#stats').innerHTML = `
     <span class="chip">recortes <b>${cs.length}</b></span>
     <span class="chip">pendentes <b>${n('pendente')}</b></span>
     <span class="chip ok">aprovados <b>${n('aprovado')}</b></span>
+    ${naoexp ? `<span class="chip ac" title="Aprovados que ainda não foram gravados no JSON">a gravar <b>${naoexp}</b></span>` : ''}
     <span class="chip bad">rejeitados <b>${n('rejeitado')}</b></span>
     ${n('herdado') ? `<span class="chip" title="Questões que já têm imagem no JSON (exportadas antes ou da prova irmã OP1/OP2)">herdadas <b>${n('herdado')}</b></span>` : ''}
-    <span class="chip wr">questões com alerta <b>${qs.filter(q => q.warnings.length).length}</b></span>`;
+    <span class="chip wr">alertas <b>${qs.filter(q => q.warnings.length).length}</b></span>`;
 }
 
 function cropsOf(n) { return M.crops.filter(c => c.questions.includes(n)); }
 
 function visibleQuestions() {
-  const qs = Object.values(M.questions).sort((a,b) => a.n - b.n);
+  const qs = Object.values(M.questions);
+  // recorte manual em questão que não está no JSON também aparece
+  for (const n of new Set(M.crops.flatMap(c => c.questions))) if (!M.questions[n]) qs.push({n, page: null, warnings: ['questão não está no JSON desta prova'], alternatives: []});
+  for (const n of new Set(SUGS.map(s => s.q))) if (n != null && !qs.some(q => q.n === n)) qs.push({n, page: null, warnings: [], alternatives: []});
+  const hasSug = n => SUGS.some(s => s.q === n);
+  qs.sort((a,b) => a.n - b.n);
   return qs.filter(q => {
     const cs = cropsOf(q.n);
     switch (FILTER) {
-      case 'todas': return cs.some(c => c.status !== 'herdado') || q.warnings.length;
+      case 'todas': return cs.some(c => c.status !== 'herdado') || q.warnings.length || hasSug(q.n);
+      case 'ia': return hasSug(q.n);
       case 'pendente': return cs.some(c => c.status === 'pendente');
       case 'baixa': return cs.some(c => c.confidence < .85);
       case 'alertas': return q.warnings.length;
       case 'aprovado': return cs.some(c => c.status === 'aprovado');
+      case 'naoexp': return cs.some(c => c.status === 'aprovado' && !c.exportado);
       case 'rejeitado': return cs.some(c => c.status === 'rejeitado');
+      case 'tabela': return cs.some(c => c.flags.some(f => f.startsWith('tabela')));
       case 'semimg': return !cs.length;
       case 'herdado': return cs.some(c => c.status === 'herdado');
     }
@@ -228,56 +488,66 @@ function visibleQuestions() {
 
 function tileHtml(c, n) {
   const l = lvl(c.confidence);
-  const multi = c.questions.length > 1 ? ` · questões ${c.questions[0]}–${c.questions[c.questions.length-1]}` : '';
+  const multi = c.questions.length > 1 ? ` · q${c.questions[0]}–${c.questions[c.questions.length-1]}` : '';
   return `<div class="tile ${c.status}" tabindex="0" data-id="${c.id}" data-q="${n}">
     <div class="img" data-zoom="${c.id}"><img loading="lazy" src="${imgUrl(c.file, c.v)}" alt="${esc(roleTxt(c))} da questão ${n}"></div>
-    <div class="meta"><span class="dot ${l}" title="confiança ${lvlTxt[l]} (${c.confidence})"></span><span class="role">${esc(roleTxt(c))}</span><span>p${c.page}${multi}</span></div>
+    <div class="meta"><span class="dot ${l}" title="confiança ${lvlTxt[l]} (${c.confidence})"></span><span class="role">${esc(roleTxt(c))}</span><span>p${c.page}${multi}</span>${c.exportado ? '<span class="tag ok ex" title="Já gravado no JSON">gravado</span>' : ''}</div>
     ${c.flags.length ? `<div class="flags">${esc(c.flags.join(' · '))}</div>` : ''}
     <div class="acts">
       <button class="a" data-act="aprovado" title="Aprovar (A)">✓</button>
       <button class="r" data-act="rejeitado" title="Rejeitar (R)">✕</button>
-      <button data-act="crop" title="Recortar manualmente (C)">✂</button>
+      <button data-act="crop" title="Recortar de novo (C)">✂</button>
       <button data-act="path" title="Copiar caminho do arquivo">⧉</button>
       <button data-act="reveal" title="Mostrar na pasta">📂</button>
     </div></div>`;
 }
 
 function render() {
-  renderStats();
+  SUGS = iaSugs();
+  renderStats(); renderIAbtn();
   const qs = visibleQuestions();
   const main = $('#main');
-  if (!qs.length) { main.innerHTML = '<div class="empty">Nada neste filtro.</div>'; return; }
-  let html = '<div class="grid">';
-  for (const q of qs) {
-    const cs = cropsOf(q.n);
-    html += `<section class="card" data-q="${q.n}">
-      <h3>Questão ${q.n} <span class="pg">${q.page ? 'pág. ' + q.page : ''}${q.status_json ? ' · ' + esc(q.status_json) : ''}</span></h3>
-      ${q.warnings.length ? `<div class="warns">${q.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}</div>` : ''}
-      ${cs.length ? `<div class="tiles">${cs.map(c => tileHtml(c, q.n)).join('')}</div>` : '<div class="qtext" style="padding-top:10px">Sem recorte detectado.</div>'}
-      <div class="qtext"><details><summary>Texto da questão (JSON)</summary>
-        <p>${esc(q.statement || '(vazio)')}</p>
-        ${q.alternatives?.length ? `<ol type="a">${q.alternatives.map(a => `<li>${esc(a.text)}</li>`).join('')}</ol>` : ''}
-        ${q.pdf_text ? `<p class="pdf" title="Texto extraído do PDF nesta questão">PDF: ${esc(q.pdf_text)}</p>` : ''}
-      </details></div>
-      <div class="cardfoot"><button data-new="${q.n}">+ Novo recorte</button></div>
-    </section>`;
+  let html = '';
+  if (!qs.length) html = `<div class="empty">Nada neste filtro.<br><br><button id="emptyNew">+ Criar recorte em uma questão</button></div>`;
+  else {
+    html = '<div class="grid">';
+    for (const q of qs) {
+      const cs = cropsOf(q.n);
+      html += `<section class="card" data-q="${q.n}">
+        <h3>Questão ${q.n} <span class="pg ${q.page ? 'link' : ''}" ${q.page ? `data-goto="${q.page}" title="Mostrar a página no painel"` : ''}>${q.page ? 'pág. ' + q.page : ''}</span><span class="pg">${q.status_json ? ' · ' + esc(q.status_json) : ''}</span></h3>
+        ${q.warnings.length ? `<div class="warns">${q.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}</div>` : ''}
+        ${sugHtml(q.n)}
+        ${cs.length ? `<div class="tiles">${cs.map(c => tileHtml(c, q.n)).join('')}</div>` : '<div class="qtext" style="padding-top:10px">Sem recorte detectado.</div>'}
+        <div class="qtext"><details><summary>Texto da questão (JSON)</summary>
+          <p>${esc(q.statement || '(vazio)')}</p>
+          ${q.alternatives?.length ? `<ol type="a">${q.alternatives.map(a => `<li>${esc(a.text)}</li>`).join('')}</ol>` : ''}
+          ${q.pdf_text ? `<p class="pdf" title="Texto extraído do PDF nesta questão">PDF: ${esc(q.pdf_text)}</p>` : ''}
+        </details></div>
+        <div class="cardfoot"><button data-new="${q.n}">+ Novo recorte</button></div>
+      </section>`;
+    }
+    html += '</div>';
   }
-  html += '</div>';
   if (M.ignored?.length && FILTER === 'todas') {
     html += `<div class="sect">Detecções descartadas (${M.ignored.length}) — clique para usar como recorte</div><div class="ign">` +
       M.ignored.map((g,i) => `<button data-ign="${i}" title="${esc(g.reason)}">p${g.page} · ${esc(g.reason)}</button>`).join('') + '</div>';
   }
   main.innerHTML = html;
   if (SEL) { const t = main.querySelector(`.tile[data-id="${SEL}"]`); if (t) t.classList.add('sel'); }
+  renderOverlays();
 }
 
 async function setStatus(ids, status) {
-  const r = await api('/api/status', {prova: PID, ids, status});
+  await api('/api/status', {prova: PID, ids, status});
   for (const c of M.crops) if (ids.includes(c.id)) c.status = status;
   render();
 }
 
 $('#main').addEventListener('click', async e => {
+  if (e.target.id === 'emptyNew') return openCrop({question: null, page: currentPanelPage()});
+  const iu = e.target.closest('[data-iause]'); if (iu) return iaUse(iu.dataset.iause);
+  const idis = e.target.closest('[data-iadis]'); if (idis) return iaDismiss(idis.dataset.iadis);
+  const g = e.target.closest('[data-goto]'); if (g) { showPagesPanel(true); return scrollToPage(+g.dataset.goto); }
   const z = e.target.closest('[data-zoom]');
   if (z) { const c = M.crops.find(c => c.id === z.dataset.zoom); select(c.id); $('#zoomImg').src = imgUrl(c.file, c.v); $('#zoomTitle').textContent = `Questão ${c.questions.join(', ')} · ${roleTxt(c)} · pág. ${c.page}`; $('#mZoom').classList.add('on'); return; }
   const b = e.target.closest('button'); if (!b) return;
@@ -299,22 +569,95 @@ $('#main').addEventListener('click', async e => {
   if (b.dataset.new) return openCrop({question: +b.dataset.new});
   if (b.dataset.ign !== undefined) { const g = M.ignored[+b.dataset.ign]; return openCrop({ignored: g}); }
 });
+$('#main').addEventListener('focusin', e => { const t = e.target.closest('.tile'); if (t && t.dataset.id !== SEL) select(t.dataset.id, false); });
 
-function select(id) {
-  SEL = id; document.querySelectorAll('.tile.sel').forEach(t => t.classList.remove('sel'));
-  const t = document.querySelector(`.tile[data-id="${id}"]`); if (t) { t.classList.add('sel'); t.focus({preventScroll:true}); t.scrollIntoView({block:'nearest'}); }
+function select(id, scroll = true) {
+  SEL = id; $$('.tile.sel').forEach(t => t.classList.remove('sel'));
+  const t = document.querySelector(`.tile[data-id="${id}"]`);
+  if (t) { t.classList.add('sel'); if (scroll) { t.focus({preventScroll:true}); t.scrollIntoView({block:'nearest'}); } }
+  $$('.ov.sel').forEach(o => o.classList.remove('sel'));
+  const o = document.querySelector(`.ov[data-id="${id}"]`);
+  if (o) { o.classList.add('sel'); if (PAGES_ON) o.scrollIntoView({block:'center', behavior:'smooth'}); }
 }
 
+// ---------- painel de páginas
+let PAGES_ON = store.get('s4i-pages') === '1';
+function showPagesPanel(on) {
+  PAGES_ON = on; store.set('s4i-pages', on ? '1' : '0');
+  $('#viewRev').classList.toggle('pages-on', on); $('#btnPages').classList.toggle('on', on);
+}
+showPagesPanel(PAGES_ON);
+$('#btnPages').onclick = () => { showPagesPanel(!PAGES_ON); if (PAGES_ON && SEL) select(SEL, false); };
+{ const w = store.get('s4i-pw'); if (w) document.documentElement.style.setProperty('--pw', w); }
+function renderPages() {
+  $('#pages').innerHTML = `<div class="pagestool"><b style="font-size:13px">Páginas (${M.pages.length})</b><span class="grow"></span>
+      <button data-pw="30vw" title="Painel estreito">S</button><button data-pw="40vw" title="Painel médio">M</button><button data-pw="55vw" title="Painel largo">L</button>
+      <button data-closepages title="Esconder (P)">✕</button></div>` +
+    M.pages.map(p => `<figure class="pgfig" data-p="${p.n}"><figcaption>Página ${p.n}<button data-cut="${p.n}" title="Criar um recorte nesta página">✂ Recortar aqui</button></figcaption>
+      <div class="pgstage" data-stage="${p.n}"><img loading="lazy" src="${imgUrl(p.file)}" alt="Página ${p.n}"></div></figure>`).join('');
+  renderOverlays();
+}
+function renderOverlays() {
+  if (!M) return;
+  $$('.pgstage').forEach(st => {
+    const pn = +st.dataset.stage, pm = M.pages.find(p => p.n === pn);
+    st.querySelectorAll('.ov').forEach(o => o.remove());
+    for (const c of M.crops.filter(c => c.page === pn && c.rect_pdf)) {
+      const r = c.rect_pdf, d = document.createElement('div');
+      d.className = `ov ${c.status}${c.id === SEL ? ' sel' : ''}`; d.dataset.id = c.id;
+      d.title = `Questão ${c.questions.join(', ')} · ${roleTxt(c)} · ${c.status}`;
+      Object.assign(d.style, {left: r[0]/pm.pdf_w*100 + '%', top: r[1]/pm.pdf_h*100 + '%', width: (r[2]-r[0])/pm.pdf_w*100 + '%', height: (r[3]-r[1])/pm.pdf_h*100 + '%'});
+      d.innerHTML = `<span>q${c.questions.join(',')}${c.role === 'alt' ? ' ' + (c.letter || '').toUpperCase() : ''}</span>`;
+      st.appendChild(d);
+    }
+    for (const sg of SUGS.filter(x => x.page === pn && x.box)) {
+      const r = sg.box, d = document.createElement('div');
+      d.className = 'ov ia'; d.dataset.ia = sg.id;
+      d.title = (sg.tipo === 'geometria' ? 'IA sugere outra área para este recorte' : 'IA viu possível figura sem recorte') + ' — clique para usar';
+      Object.assign(d.style, {left: r[0]/pm.pdf_w*100 + '%', top: r[1]/pm.pdf_h*100 + '%', width: (r[2]-r[0])/pm.pdf_w*100 + '%', height: (r[3]-r[1])/pm.pdf_h*100 + '%'});
+      d.innerHTML = `<span>IA${sg.q != null ? ' q' + sg.q : ''}</span>`;
+      st.appendChild(d);
+    }
+  });
+}
+$('#pages').addEventListener('click', e => {
+  const pw = e.target.closest('[data-pw]'); if (pw) { document.documentElement.style.setProperty('--pw', pw.dataset.pw); store.set('s4i-pw', pw.dataset.pw); return; }
+  if (e.target.closest('[data-closepages]')) return showPagesPanel(false);
+  const cut = e.target.closest('[data-cut]'); if (cut) { const p = +cut.dataset.cut; return openCrop({question: guessQuestion(p), page: p}); }
+  const iov = e.target.closest('.ov.ia'); if (iov) return iaUse(iov.dataset.ia);
+  const o = e.target.closest('.ov'); if (!o) return;
+  const c = M.crops.find(c => c.id === o.dataset.id);
+  if (!document.querySelector(`.tile[data-id="${c.id}"]`)) { FILTER = 'todas'; $$('#filters [data-f]').forEach(x => x.classList.toggle('on', x.dataset.f === 'todas')); render(); }
+  const t = document.querySelector(`.tile[data-id="${c.id}"]`);
+  if (t) { select(c.id, false); t.scrollIntoView({block:'center', behavior:'smooth'}); t.focus({preventScroll:true}); }
+  else { select(c.id, false); toast(`Questão ${c.questions.join(', ')} — recorte herdado (não aparece na grade em "Todas")`); }
+});
+function scrollToPage(n) { const f = document.querySelector(`.pgfig[data-p="${n}"]`); if (f) f.scrollIntoView({block:'start', behavior:'smooth'}); }
+function currentPanelPage() {
+  if (!PAGES_ON) return 1;
+  const y0 = $("#pages").getBoundingClientRect().top;
+  const f = $$('.pgfig').find(f => f.getBoundingClientRect().bottom > y0 + 80);
+  return f ? +f.dataset.p : 1;
+}
+function guessQuestion(page) {
+  const qs = Object.values(M.questions).filter(q => q.page && q.page <= page).sort((a,b) => b.n - a.n);
+  return qs[0]?.n ?? null;
+}
+
+// ---------- teclado
 document.addEventListener('keydown', e => {
   if (document.querySelector('.modal.on')) {
     if (e.key === 'Escape') closeModals();
     if (e.key === 'Enter' && $('#mCrop').classList.contains('on') && !$('#cropSave').disabled) saveCrop();
     return;
   }
+  if (VIEW !== 'rev' || e.ctrlKey || e.metaKey || e.altKey) return;
   if (['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)) return;
-  const tiles = [...document.querySelectorAll('.tile')]; if (!tiles.length) return;
-  let i = tiles.findIndex(t => t.dataset.id === SEL);
   const k = e.key.toLowerCase();
+  if (k === 'p') { $('#btnPages').click(); return; }
+  if (k === 'n') { $('#btnNewQ').click(); e.preventDefault(); return; }
+  const tiles = $$('.tile'); if (!tiles.length) return;
+  let i = tiles.findIndex(t => t.dataset.id === SEL);
   if (k === 'j' || e.key === 'ArrowRight') { select(tiles[Math.min(tiles.length-1, i+1)].dataset.id); e.preventDefault(); }
   else if (k === 'k' || e.key === 'ArrowLeft') { select(tiles[Math.max(0, i-1)].dataset.id); e.preventDefault(); }
   else if (SEL && (k === 'a' || k === 'r')) { const st = k === 'a' ? 'aprovado' : 'rejeitado'; setStatus([SEL], st).then(() => { const n = tiles[i+1]; if (n) select(n.dataset.id); }); }
@@ -322,8 +665,8 @@ document.addEventListener('keydown', e => {
   else if (SEL && k === 'z') document.querySelector(`.tile[data-id="${SEL}"] [data-zoom]`)?.click();
 });
 
-document.querySelectorAll('#filters [data-f]').forEach(b => b.onclick = () => {
-  FILTER = b.dataset.f; document.querySelectorAll('#filters [data-f]').forEach(x => x.classList.toggle('on', x === b)); render();
+$$('#filters [data-f]').forEach(b => b.onclick = () => {
+  FILTER = b.dataset.f; $$('#filters [data-f]').forEach(x => x.classList.toggle('on', x === b)); render();
 });
 
 $('#btnBulk').onclick = async () => {
@@ -332,95 +675,243 @@ $('#btnBulk').onclick = async () => {
   if (!confirm(`Aprovar ${ids.length} recortes de confiança alta?`)) return;
   await setStatus(ids, 'aprovado'); toast(`${ids.length} aprovados.`);
 };
+$('#btnNewQ').onclick = () => openCrop({question: null, page: currentPanelPage(), autoPage: true});
 
+
+// ======================================================================= segunda opinião (IA de layout)
+let IA = {status: 'nenhum'}, IAT = null, SUGS = [];
+async function loadIA() {
+  clearTimeout(IAT);
+  const pid = PID;
+  try { IA = await api('/api/ia?prova=' + encodeURIComponent(pid)); } catch (e) { IA = {status: 'erro', log: e.message}; }
+  if (pid !== PID) return;
+  if (IA.status === 'rodando') { renderIAbtn(); IAT = setTimeout(loadIA, 3000); }
+  else render();
+}
+function renderIAbtn() {
+  const b = $('#btnIA'); if (!b) return;
+  b.hidden = VIEW !== 'rev' || ['indisponivel', 'carregando'].includes(IA.status);
+  const n = SUGS.length;
+  b.textContent = IA.status === 'rodando' ? `IA analisando… ${IA.progresso || ''}` : IA.status === 'pronto' ? `IA: ${n} sugest${n === 1 ? 'ão' : 'ões'}` : IA.status === 'erro' ? 'IA: erro — rodar de novo' : 'Rodar IA';
+  b.disabled = IA.status === 'rodando';
+  b.classList.toggle('on', FILTER === 'ia');
+  if (IA.status === 'pronto') b.title = `Docling, ${fmtDate(IA.em)} (${IA.segundos} s). Clique para ver só as questões com sugestão; clique com Shift para rodar de novo.`;
+  if (IA.status === 'erro') b.title = IA.log || '';
+}
+$('#btnIA').onclick = async e => {
+  if (IA.status === 'pronto' && !e.shiftKey) { const f = FILTER === 'ia' ? 'todas' : 'ia'; $$('#filters [data-f]').forEach(x => x.classList.toggle('on', x.dataset.f === f)); FILTER = f; return render(); }
+  await api('/api/ia/run', {prova: PID, force: true}); IA = {status: 'rodando'}; renderIAbtn(); IAT = setTimeout(loadIA, 1500);
+};
+const area = r => Math.max(0, r[2]-r[0]) * Math.max(0, r[3]-r[1]);
+const inter = (a, b) => area([Math.max(a[0],b[0]), Math.max(a[1],b[1]), Math.min(a[2],b[2]), Math.min(a[3],b[3])]);
+const iou = (a, b) => { const i = inter(a, b), u = area(a) + area(b) - i; return u > 0 ? i / u : 0; };
+function ownerOf(page, r) {
+  const pm = pageMeta(page), col = pm.single ? 0 : ((r[0] + r[2]) / 2 < pm.pdf_w / 2 ? 0 : 1);
+  const key = [page, col, r[1] + Math.min((r[3] - r[1]) / 2, 20)];
+  const le = (a, b) => a[0] !== b[0] ? a[0] < b[0] : a[1] !== b[1] ? a[1] < b[1] : a[2] <= b[2];
+  let n = null;
+  for (const a of M.ancoras || []) if (le([a.page, a.col, a.y], key)) n = a.n;
+  return n;
+}
+// regras de docs/avaliacao_hibrido.md: a IA só avisa, quem recorta é o PyMuPDF
+function iaSugs() {
+  if (IA.status !== 'pronto' || !M || !IA.pages) return [];
+  const dis = new Set(M.ia_dispensadas || []);
+  const anc = M.ancoras || [], ancPages = new Set(anc.map(a => a.page));
+  const out = [];
+  for (const [pn, boxes] of Object.entries(IA.pages)) {
+    const page = +pn, pm = pageMeta(page);
+    if (!pm || !ancPages.has(page)) continue;
+    const crops = M.crops.filter(c => c.page === page), ign = (M.ignored || []).filter(g => g.page === page);
+    // 1. geometria duvidosa: recorte automático que a IA não confirma
+    for (const c of crops) {
+      // só recorte pendente: o que você já aprovou ou rejeitou não volta a ser questionado
+      if (c.origem !== 'auto' || !c.bbox_pdf || c.status !== 'pendente' || c.flags.some(f => f.includes('recorte manual'))) continue;
+      const bs = boxes.filter(b => b.conf >= .5);
+      let best = null, bi = 0;
+      for (const b of bs) { const i = iou(c.bbox_pdf, b.bbox_pdf); if (i > bi) { bi = i; best = b; } }
+      // a IA juntou várias peças do motor numa caixa só (ex.: alternativas A–E): não é discordância
+      const grouped = bs.some(b => inter(c.bbox_pdf, b.bbox_pdf) >= .8 * area(c.bbox_pdf) &&
+        crops.some(o => o !== c && o.bbox_pdf && o.status !== 'rejeitado' && inter(o.bbox_pdf, b.bbox_pdf) >= .8 * area(o.bbox_pdf)));
+      if (bi >= .5 || grouped) continue;
+      const id = 'g' + c.id; if (dis.has(id)) continue;
+      if (!best) best = bs.filter(b => inter(c.bbox_pdf, b.bbox_pdf) > 0).sort((a, b) => inter(c.bbox_pdf, b.bbox_pdf) - inter(c.bbox_pdf, a.bbox_pdf))[0] || null;
+      out.push({id, tipo: 'geometria', page, crop: c, box: best?.bbox_pdf || null, conf: best?.conf, iou: bi, q: c.questions[0]});
+    }
+    // 2. possível figura sem recorte
+    for (const b of boxes) {
+      const r = b.bbox_pdf, w = r[2] - r[0], h = r[3] - r[1], cy = (r[1] + r[3]) / 2;
+      if (b.conf < .7 || w < 40 || h < 30 || cy < .09 * pm.pdf_h || cy > .94 * pm.pdf_h) continue;
+      const touch = x => x && inter(x, r) > .2 * Math.min(area(x), area(r));
+      if (crops.some(c => touch(c.rect_pdf) || touch(c.bbox_pdf)) || ign.some(g => touch(g.bbox))) continue;
+      const id = 'n' + page + '_' + r.map(Math.round).join('_'); if (dis.has(id)) continue;
+      out.push({id, tipo: 'nao_recortada', page, box: r, conf: b.conf, label: b.label, q: ownerOf(page, r)});
+    }
+  }
+  return out;
+}
+function sugHtml(n) {
+  const sg = SUGS.filter(s => s.q === n); if (!sg.length) return '';
+  return `<div class="iasug">${sg.map(s => `<div class="ia">🤖 ${s.tipo === 'geometria'
+      ? `IA discorda da área do recorte da pág. ${s.page} (${s.box ? `sobreposição ${Math.round(s.iou * 100)}%` : 'ela não vê figura ali'})`
+      : `IA viu possível ${String(s.label).toLowerCase() === 'table' ? 'tabela' : 'figura'} sem recorte na pág. ${s.page} (confiança ${Math.round(s.conf * 100)}%)`}
+    <span class="b">${s.box ? `<button data-iause="${s.id}">Usar área da IA</button>` : ''}<button data-iadis="${s.id}" title="A IA errou: não mostrar de novo">Dispensar</button></span></div>`).join('')}</div>`;
+}
+function iaUse(id) {
+  const s = SUGS.find(x => x.id === id); if (!s || !s.box) return;
+  if (s.tipo === 'geometria') openCrop({crop: s.crop, preset: s.box});
+  else openCrop({question: s.q, page: s.page, preset: s.box});
+}
+async function iaDismiss(id) {
+  await api('/api/ia/dispensar', {prova: PID, id});
+  (M.ia_dispensadas = M.ia_dispensadas || []).push(id); render(); toast('Sugestão dispensada.');
+}
+function applyPreset() {
+  const s = scale(), r = CROP.preset;
+  Object.assign($('#selRect').style, {left: r[0]*s+'px', top: r[1]*s+'px', width: (r[2]-r[0])*s+'px', height: (r[3]-r[1])*s+'px'});
+  $('#selRect').hidden = false; selPdf = r.slice(); syncSave();
+}
+
+// ======================================================================= gravar no JSON
+let XQ = [], XSEL = new Set(), XIRM = {}, XPREV = null, XT = null;
 $('#btnExport').onclick = async () => {
   if (!M) return;
-  const n = M.crops.filter(c => c.status === 'aprovado').length;
-  const pend = M.crops.filter(c => c.status === 'pendente').length;
-  if (!n) return toast('Nenhum recorte aprovado para exportar.');
-  const dest = M.pdf.replace(/[\\/][^\\/]+$/, '') + '\\imagens';
-  if (!confirm(`Exportar ${n} recortes aprovados?\n\n• Copia as imagens para:\n  ${dest}\n• Atualiza imagens/has_image no JSON:\n  ${M.json || '(sem JSON vinculado — só copia as imagens)'}\n• Alternativa aprovada como imagem vira "imgA" no texto (padrão do importador)\n• Propaga para as provas irmãs da mesma pasta (mesmo id, ex.: OP1 → OP2)\n• Faz backup do JSON antes (logs/system4_image/backup).\n\nDocumentos sincroniza com o Google Drive: isso vai para produção.${pend ? `\n\nAtenção: ${pend} recortes ainda estão pendentes e NÃO serão exportados.` : ''}`)) return;
-  busy(true, 'Exportando…');
+  XQ = [...new Set(M.crops.filter(c => c.status === 'aprovado').flatMap(c => c.questions))].sort((a,b) => a - b);
+  if (!XQ.length) return toast('Nenhum recorte aprovado para gravar.');
+  // por padrão: só o que ainda não foi gravado; se tudo já foi, todas
+  const pend = new Set(M.crops.filter(c => c.status === 'aprovado' && !c.exportado).flatMap(c => c.questions));
+  XSEL = new Set(pend.size ? XQ.filter(n => pend.has(n)) : XQ);
+  XIRM = {}; XPREV = null;
+  $('#mExport').classList.add('on');
+  $('#xBody').innerHTML = '<div class="empty">Calculando o que vai mudar…</div>';
+  await xPreview();
+};
+async function xPreview() {
+  $('#xGo').disabled = true;
   try {
-    const r = await api('/api/export', {prova: PID});
-    const irm = Object.entries(r.irmas || {}).map(([f, k]) => `${f.replace('_COMENTADA_LLM.json','')}: ${k}`).join(', ');
-    toast(`Exportado: ${r.imagens_copiadas} arquivos, ${r.questoes} questões no JSON${irm ? ' · provas irmãs atualizadas — ' + irm : ''}.`, 7000);
-    await openProva(PID);
-  }
-  catch(err) { toast('Erro: ' + err.message, 6000); }
-  finally { busy(false); }
-};
-
-// ---------- importar
-$('#btnImport').onclick = async () => {
-  $('#mImport').classList.add('on'); $('#pdfSearch').focus();
-  if (!PDFS.length) PDFS = await api('/api/pdfs');
-  renderPdfs();
-};
-$('#pdfSearch').oninput = renderPdfs;
-function renderPdfs() {
-  const terms = $('#pdfSearch').value.toLowerCase().split(/\s+/).filter(Boolean);
-  const list = PDFS.filter(p => terms.every(t => p.rel.toLowerCase().includes(t))).slice(0, 300);
-  $('#pdfList').innerHTML = list.map(p => `<button data-pdf="${esc(p.path)}"><span style="flex:1">${esc(p.rel)}</span>${p.json ? '<span class="tag">JSON</span>' : '<span class="tag">sem JSON</span>'}${p.processada ? '<span class="tag ok">processada</span>' : ''}</button>`).join('') || '<div class="help">Nada encontrado.</div>';
+    XPREV = await api('/api/export', {prova: PID, dry_run: true, questions: [...XSEL]});
+    for (const n of XPREV.irmas_disponiveis || []) if (!(n in XIRM)) XIRM[n] = true;
+    xRender();
+  } catch(err) { $('#xBody').innerHTML = `<div class="empty">Erro: ${esc(err.message)}</div>`; }
 }
-$('#pdfList').onclick = async e => {
-  const b = e.target.closest('[data-pdf]'); if (!b) return;
-  closeModals(); busy(true, 'Varrendo o PDF e recortando…');
-  try { const s = await api('/api/process', {pdf: b.dataset.pdf}); PDFS = []; await loadProvas(s.prova_id); toast(`${s.recortes} recortes gerados · ${s.alertas} questões com alerta.`, 4000); }
-  catch(err) { toast('Erro: ' + err.message, 6000); }
+const fmtVal = v => {
+  if (v === null || v === undefined) return '<span class="help">—</span>';
+  if (typeof v === 'boolean') return v ? 'sim' : 'não';
+  if (Array.isArray(v)) return v.length ? `<ul>${v.map(x => `<li>${esc(String(x).replace('../imagens/', ''))}</li>`).join('')}</ul>` : '<span class="help">(vazio)</span>';
+  const s = String(v); return esc(s.length > 220 ? s.slice(0, 220) + '…' : s);
+};
+function xRender() {
+  const P = XPREV, hist = P.historico || [], last = hist[hist.length - 1];
+  const rej = M.crops.filter(c => c.status === 'pendente').length;
+  const changed = new Set((P.jsons.find(j => j.principal)?.questoes || []).map(q => q.n));
+  const subst = P.arquivos.filter(a => a.substitui).length;
+  let h = `<div class="xsum">
+    <div class="xbox"><b>Imagens</b>${P.imagens_copiadas} arquivos copiados para<div class="mono">${esc(P.pasta)}</div>${subst ? `<span class="help">${subst} já existem e serão substituídos</span>` : ''}</div>
+    <div class="xbox"><b>Última gravação por aqui</b>${last ? `${fmtDate(last.em)}<div class="help">${Object.entries(last.jsons || {}).map(([f, qs]) => `${esc(f.replace(/_COMENTADA_LLM\.json|_LLM\.json/, ''))}: ${qs.length ? 'q' + qs.join(', ') : 'nada mudou'}`).join('<br>')}</div>` : M.crops.some(c => c.exportado) ? `antes desta versão (sem data registrada)<div class="help">${M.crops.filter(c => c.exportado).length} recortes marcados como gravados</div>` : 'nunca gravado por esta ferramenta'}</div>
+    <div class="xbox"><b>Segurança</b>Backup de cada JSON antes de gravar em <span class="mono">logs/system4_image/backup</span>. Documentos sincroniza com o Drive: isto vai para produção.</div>
+  </div>`;
+  h += `<div style="display:flex;align-items:center;gap:8px"><b>Questões a gravar</b><span class="help">${XSEL.size} de ${XQ.length} com recorte aprovado · contorno azul = muda algo no JSON</span><span class="grow"></span>
+    <button data-xall="1" style="padding:2px 9px;font-size:12px">Todas</button><button data-xall="pend" style="padding:2px 9px;font-size:12px">Só não gravadas</button><button data-xall="0" style="padding:2px 9px;font-size:12px">Nenhuma</button></div>
+    <div class="qpick">${XQ.map(n => `<label class="${XSEL.has(n) ? '' : 'off'} ${changed.has(n) ? 'chg' : ''}"><input type="checkbox" data-xq="${n}" ${XSEL.has(n) ? 'checked' : ''}>${n}</label>`).join('')}</div>`;
+  if (rej) h += `<div class="warn" style="margin-bottom:12px">⚠ ${rej} recortes ainda estão pendentes e não entram nesta gravação.</div>`;
+  for (const j of P.jsons) {
+    const on = j.principal || XIRM[j.arquivo];
+    const bk = j.ultimo_backup;
+    h += `<div class="jcard ${on ? '' : 'off'}"><div class="jhead">
+      ${j.principal ? '<span class="tag ac">JSON desta prova</span>' : `<label class="lbl"><input type="checkbox" data-xirm="${esc(j.arquivo)}" ${on ? 'checked' : ''}> <b>Espelhar na prova irmã</b></label>`}
+      <span class="fn">${esc(j.arquivo)}</span>
+      <span class="help">Modificado em ${fmtDate(j.modificado_em)} · último backup: ${bk ? fmtDate(bk.stamp) : 'nenhum'} · ${j.questoes.length ? `<b style="color:var(--tx)">${j.questoes.length} questões mudam</b>` : 'nada muda'}${j.imagens_associadas.length ? ` · ${j.imagens_associadas.length} imagem(ns) de texto-base` : ''}</span>
+    </div><div class="jbody">`;
+    if (!j.questoes.length && !j.imagens_associadas.length) h += `<div class="help" style="padding:8px 0">Este JSON já está igual ao que seria gravado.</div>`;
+    for (const q of j.questoes) {
+      h += `<div class="dq"><div class="qh">Questão ${q.n}<span class="help" style="font-weight:400">status ${esc(q.atual.status || '—')}</span>${j.principal ? `<button data-raw="${q.n}">Ver JSON atual</button>` : ''}</div>
+        <table class="dt"><tr><td></td><td class="help">no JSON agora</td><td class="help">depois de gravar</td></tr>${q.mudancas.map(m => `<tr><td>${esc(m.campo)}</td><td class="old">${fmtVal(m.antes)}</td><td class="new">${fmtVal(m.depois)}</td></tr>`).join('')}</table>
+        <div data-rawbox="${q.n}"></div></div>`;
+    }
+    for (const a of j.imagens_associadas) h += `<div class="dq"><div class="qh">${a.novo ? 'Nova' : 'Atualiza'} imagem de texto-base</div><div class="help">${esc(a.title)} · questões ${esc((a.source_numbers || []).join(', '))}</div></div>`;
+    h += '</div></div>';
+  }
+  $('#xBody').innerHTML = h;
+  const irm = Object.entries(XIRM).filter(([, v]) => v).map(([k]) => k);
+  const nJ = 1 + irm.length;
+  $('#xSub').textContent = `${PID}`;
+  $('#xFoot').textContent = XSEL.size ? `${XSEL.size} questões · ${nJ} JSON${nJ > 1 ? 's' : ''}${(P.irmas_disponiveis || []).length && !irm.length ? ' · sem espelhar na irmã' : ''}` : 'Nenhuma questão marcada';
+  $('#xGo').textContent = `Gravar ${XSEL.size} questões`;
+  $('#xGo').disabled = !XSEL.size;
+}
+$('#xBody').addEventListener('change', e => {
+  const q = e.target.dataset.xq, ir = e.target.dataset.xirm;
+  if (q) { e.target.checked ? XSEL.add(+q) : XSEL.delete(+q); clearTimeout(XT); XT = setTimeout(xPreview, 250); }
+  if (ir) { XIRM[ir] = e.target.checked; xRender(); }
+});
+$('#xBody').addEventListener('click', async e => {
+  const a = e.target.closest('[data-xall]');
+  if (a) { const v = a.dataset.xall; const pend = new Set(M.crops.filter(c => c.status === 'aprovado' && !c.exportado).flatMap(c => c.questions));
+    XSEL = new Set(v === '1' ? XQ : v === 'pend' ? XQ.filter(n => pend.has(n)) : []); return xPreview(); }
+  const r = e.target.closest('[data-raw]'); if (!r) return;
+  const box = document.querySelector(`[data-rawbox="${r.dataset.raw}"]`);
+  if (box.innerHTML) { box.innerHTML = ''; r.textContent = 'Ver JSON atual'; return; }
+  const q = await api(`/api/jsonq?prova=${encodeURIComponent(PID)}&n=${r.dataset.raw}`);
+  box.innerHTML = `<pre class="raw">${esc(JSON.stringify(q, null, 2))}</pre>`; r.textContent = 'Esconder JSON';
+});
+$('#xGo').onclick = async () => {
+  const irmas = Object.entries(XIRM).filter(([, v]) => v).map(([k]) => k);
+  busy(true, 'Gravando…');
+  try {
+    const r = await api('/api/export', {prova: PID, questions: [...XSEL], irmas});
+    closeModals();
+    const irm = Object.entries(r.irmas || {}).map(([f, k]) => `${f.replace(/_COMENTADA_LLM\.json|_LLM\.json/, '')}: ${k}`).join(', ');
+    toast(`Gravado: ${r.imagens_copiadas} arquivos, ${r.questoes} questões no JSON${irm ? ' · irmã(s) — ' + irm : ''}. Backup feito.`, 7000);
+    M = await api('/api/manifest?prova=' + encodeURIComponent(PID)); render();
+  } catch(err) { toast('Erro: ' + err.message, 6000); }
   finally { busy(false); }
 };
-$('#pdfFile').onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
-  closeModals(); busy(true, 'Enviando e processando…');
-  try {
-    const r = await fetch('/api/upload?name=' + encodeURIComponent(f.name), {method:'POST', body: f});
-    const s = await r.json(); if (!r.ok) throw new Error(s.erro);
-    await loadProvas(s.prova_id); toast(`${s.recortes} recortes gerados.`);
-  } catch(err) { toast('Erro: ' + err.message, 6000); }
-  finally { busy(false); e.target.value = ''; }
-};
 
-// ---------- recorte manual
+// ======================================================================= recorte manual
 let CROP = null, drag = null, selPdf = null;
 function openCrop(o) {
   CROP = o; selPdf = null; $('#cropSave').disabled = true; $('#selRect').hidden = true;
   const c = o.crop;
-  const page = c ? c.page : o.ignored ? o.ignored.page : (M.questions[o.question]?.page || 1);
-  $('#cropTitle').textContent = c ? `Recortar de novo · Questão ${c.questions.join(', ')} · ${roleTxt(c)}` : o.ignored ? `Usar detecção descartada (pág. ${page})` : `Novo recorte · Questão ${o.question}`;
+  if (o.ignored) o.question = guessQuestion(o.ignored.page);
+  const page = c ? c.page : o.ignored ? o.ignored.page : (o.page || M.questions[o.question]?.page || 1);
+  $('#cropTitle').textContent = c ? `Recortar de novo · Questão ${c.questions.join(', ')} · ${roleTxt(c)}` : o.ignored ? 'Usar detecção descartada' : 'Novo recorte';
+  $('#cropQWrap').hidden = !!c;
+  $('#cropQ').value = c ? '' : (o.question ?? '');
   $('#cropRole').value = c ? c.role : 'enunciado'; $('#cropLetter').value = c?.letter || 'a';
-  $('#cropRole').disabled = !!c; $('#cropLetter').disabled = !!c;
   $('#cropLetter').style.display = ($('#cropRole').value === 'alt') ? '' : 'none';
   CROP.page = page;
   CROP.old = c ? c.rect_pdf : o.ignored ? o.ignored.bbox : null;
-  if (o.ignored) { CROP.question = guessQuestion(page, o.ignored.bbox); }
+  CROP.presetPage = o.preset ? page : null;
   showPage();
   $('#mCrop').classList.add('on');
+  if (!c && !o.question) setTimeout(() => $('#cropQ').focus(), 30);
 }
-$('#cropRole').onchange = () => $('#cropLetter').style.display = ($('#cropRole').value === 'alt') ? '' : 'none';
-function guessQuestion(page, bbox) {
-  const qs = Object.values(M.questions).filter(q => q.page && q.page <= page).sort((a,b) => b.n - a.n);
-  const n = prompt('Esta imagem pertence a qual questão?', qs[0]?.n || '');
-  return n ? +n : null;
-}
+const roleChanged = () => CROP?.crop && ($('#cropRole').value !== CROP.crop.role || ($('#cropRole').value === 'alt' && $('#cropLetter').value !== (CROP.crop.letter || '')));
+const syncSave = () => { $('#cropSave').disabled = !selPdf && !roleChanged(); $('#cropSave').textContent = !selPdf && roleChanged() ? 'Salvar tipo (mesma área)' : 'Salvar recorte'; };
+$('#cropRole').onchange = () => { $('#cropLetter').style.display = ($('#cropRole').value === 'alt') ? '' : 'none'; syncSave(); };
+$('#cropLetter').onchange = syncSave;
+$('#cropQ').oninput = () => {
+  const q = M.questions[$('#cropQ').value];
+  if (CROP.autoPage && q?.page && q.page !== CROP.page) { CROP.page = q.page; showPage(); }
+};
 function pageMeta(n) { return M.pages.find(p => p.n === n); }
 function showPage() {
   const pm = pageMeta(CROP.page);
   $('#pgLbl').textContent = `pág. ${CROP.page}/${M.pages.length}`;
   const img = $('#pageImg');
-  img.onload = () => drawOld();
+  img.onload = () => { drawOld(); if (CROP.preset && CROP.page === CROP.presetPage) applyPreset(); };
   img.src = imgUrl(pm.file);
-  $('#selRect').hidden = true; selPdf = null; $('#cropSave').disabled = true;
+  $('#selRect').hidden = true; selPdf = null; syncSave();
 }
 function scale() { const pm = pageMeta(CROP.page), img = $('#pageImg'); return img.clientWidth / pm.pdf_w; }
 function drawOld() {
   const o = $('#oldRect');
-  const c = CROP.crop;
-  if (CROP.old && (!c || c.page === CROP.page)) { const s = scale(), r = CROP.old; Object.assign(o.style, {display:'block', left: r[0]*s+'px', top: r[1]*s+'px', width:(r[2]-r[0])*s+'px', height:(r[3]-r[1])*s+'px'}); }
+  const c = CROP.crop, oldPage = c ? c.page : CROP.ignored?.page;
+  if (CROP.old && oldPage === CROP.page) { const s = scale(), r = CROP.old; Object.assign(o.style, {display:'block', left: r[0]*s+'px', top: r[1]*s+'px', width:(r[2]-r[0])*s+'px', height:(r[3]-r[1])*s+'px'}); }
   else o.style.display = 'none';
 }
-$('#pgPrev').onclick = () => { if (CROP.page > 1) { CROP.page--; showPage(); } };
-$('#pgNext').onclick = () => { if (CROP.page < M.pages.length) { CROP.page++; showPage(); } };
+$('#pgPrev').onclick = () => { if (CROP.page > 1) { CROP.page--; CROP.autoPage = false; showPage(); } };
+$('#pgNext').onclick = () => { if (CROP.page < M.pages.length) { CROP.page++; CROP.autoPage = false; showPage(); } };
 const stage = $('#stage');
 stage.addEventListener('dragstart', e => e.preventDefault());
 stage.addEventListener('pointerdown', e => {
@@ -437,38 +928,48 @@ stage.addEventListener('pointermove', e => {
 });
 const endDrag = e => {
   if (!drag) return; const s = scale();
-  if (e && e.clientX !== undefined) { const b = stage.getBoundingClientRect(); drag.x2 = Math.max(0, Math.min(b.width, e.clientX - b.left)); drag.y2 = Math.max(0, Math.min(b.height, e.clientY - b.top)); 
+  if (e && e.clientX !== undefined) { const b = stage.getBoundingClientRect(); drag.x2 = Math.max(0, Math.min(b.width, e.clientX - b.left)); drag.y2 = Math.max(0, Math.min(b.height, e.clientY - b.top));
     Object.assign($('#selRect').style, {left: Math.min(drag.x2, drag.x)+'px', top: Math.min(drag.y2, drag.y)+'px', width: Math.abs(drag.x2-drag.x)+'px', height: Math.abs(drag.y2-drag.y)+'px'}); }
   if (drag.x2 !== undefined && Math.abs(drag.x2 - drag.x) > 6 && Math.abs(drag.y2 - drag.y) > 6) {
     selPdf = [Math.min(drag.x, drag.x2)/s, Math.min(drag.y, drag.y2)/s, Math.max(drag.x, drag.x2)/s, Math.max(drag.y, drag.y2)/s];
-    $('#cropSave').disabled = false;
   }
+  syncSave();
   drag = null;
 };
 stage.addEventListener('pointerup', endDrag);
 stage.addEventListener('pointercancel', endDrag);
 $('#cropSave').onclick = saveCrop;
 async function saveCrop() {
-  if (!selPdf) return;
-  const body = {prova: PID, page: CROP.page, rect: selPdf};
-  if (CROP.crop) body.crop_id = CROP.crop.id;
+  const keep = !selPdf && roleChanged();  // só troca o tipo, mantém a área
+  if (!selPdf && !keep) return;
+  const body = {prova: PID, page: keep ? CROP.crop.page : CROP.page, rect: selPdf || CROP.crop.rect_pdf};
+  if (CROP.crop) { body.crop_id = CROP.crop.id; body.role = $('#cropRole').value; body.letter = body.role === 'alt' ? $('#cropLetter').value : null; }
   else {
-    body.question = CROP.question; body.role = $('#cropRole').value; body.letter = body.role === 'alt' ? $('#cropLetter').value : null;
-    if (!body.question) return toast('Informe a questão.');
+    body.question = +$('#cropQ').value || null; body.role = $('#cropRole').value; body.letter = body.role === 'alt' ? $('#cropLetter').value : null;
+    if (!body.question) { $('#cropQ').focus(); return toast('Informe o número da questão.'); }
+    if (!M.questions[body.question] && !confirm(`A questão ${body.question} não está no JSON desta prova. Criar o recorte mesmo assim?`)) return;
   }
   busy(true, 'Recortando do PDF…');
   try {
     const c = await api('/api/recrop', body);
     const i = M.crops.findIndex(x => x.id === c.id); if (i >= 0) M.crops[i] = c; else M.crops.push(c);
-    closeModals(); render(); select(c.id); toast('Recorte salvo e aprovado.');
+    closeModals();
+    if (!document.querySelector(`.tile[data-id="${c.id}"]`) && FILTER !== 'todas') { FILTER = 'todas'; $$('#filters [data-f]').forEach(x => x.classList.toggle('on', x.dataset.f === 'todas')); }
+    render(); select(c.id); toast(`Recorte da questão ${c.questions.join(', ')} salvo e aprovado.`);
   } catch(err) { toast('Erro: ' + err.message, 6000); }
   finally { busy(false); }
 }
 
-function closeModals() { document.querySelectorAll('.modal.on').forEach(m => m.classList.remove('on')); }
-document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.matches('[data-close]')) closeModals(); }));
+function closeModals() { $$('.modal.on').forEach(m => m.classList.remove('on')); }
+$$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.matches('[data-close]')) closeModals(); }));
 
-loadProvas().catch(err => { $('#main').innerHTML = `<div class="empty">Erro ao carregar: ${esc(err.message)}</div>`; });
+// ======================================================================= início
+(async () => {
+  const m = location.hash.match(/^#prova=(.+)$/);
+  try {
+    if (m) { await openProva(decodeURIComponent(m[1])); } else { setView('lib'); await loadLib(); }
+  } catch (err) { setView('lib'); $('#libList').innerHTML = `<div class="empty">Erro ao carregar: ${esc(err.message)}</div>`; }
+})();
 </script>
 </body>
 </html>

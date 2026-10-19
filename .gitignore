@@ -1,3 +1,7 @@
 workspace/
 __pycache__/
 *.pyc
+config.json
+.webview/
+app.log
+.venv-ai/

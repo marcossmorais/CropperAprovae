@@ -20,8 +20,8 @@ import unicodedata
 
 import pymupdf
 
-# pasta do acervo (System 3.0, com Documentos/ e logs/); padrão: dois níveis acima deste arquivo
-ROOT = os.environ.get("SYSTEM3_ROOT") or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# pasta do acervo (System 3.0, com Documentos/ e logs/): variável SYSTEM3_ROOT; padrão Documents/CLAUDE/System3.0
+ROOT = os.environ.get("SYSTEM3_ROOT") or os.path.join(os.path.expanduser("~"), "Documents", "CLAUDE", "System3.0")
 DOCS = os.path.join(ROOT, "Documentos")
 WORKSPACE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workspace")
 DPI = 150
@@ -37,7 +37,9 @@ HEADER_BACK_RE = re.compile(
     r"(?:quest(?:ões|oes)|questions)\s+(?:de\s+)?(\d{1,3})\s*(?:a|e|and|to|-|–)\s*(\d{1,3})"
     r"[^\n]{0,40}(?:acima|above)", re.I)
 FIG_WORD_RE = re.compile(r"\b(?:figura|gr[aá]fico|imagem|tabela|mapa|charge|tirinha|quadrinho|esquema|circuito|diagrama|"
-                         r"comic strip|cartoon|picture|figure)\b", re.I)
+                         r"comic strip|cartoon|picture|figure)\b|\b(?:n?[oa]s?|pel[oa]s?|nest[ea]|ness[ea])\s+quadros?\b", re.I)
+# marcadores que a extração deixa onde havia imagem/fórmula que ela não transcreveu
+PLACEHOLDER_RE = re.compile(r"<!--\s*(?:image|formula-not-decoded)\s*-->|\[(?:imagem|figura|image)\b[^\]]{0,60}\]", re.I)
 
 
 # ----------------------------------------------------------------------------- utilidades
@@ -84,6 +86,7 @@ class Page:
         self.index = index
         self.rect = pg.rect
         self.mid = pg.rect.width / 2
+        self.single = False  # página de coluna única (ENEM 2014 tem): tudo é coluna 0, sem cortar no meio
         self.lines = []  # dict(text, rect, col, red)
         d = pg.get_text("dict")
         for b in d["blocks"]:
@@ -97,6 +100,13 @@ class Page:
                 red = any(is_red(s.get("color")) and s["text"].strip() for s in ln["spans"])
                 self.lines.append({"text": text, "rect": r, "col": self.col_of(r), "red": red,
                                    "spans": [(pymupdf.Rect(s["bbox"]), s["text"], is_red(s.get("color"))) for s in ln["spans"]]})
+        # coluna única: boa parte das linhas de texto corrido atravessa o meio da página
+        body = [l for l in self.lines if len(l["text"].strip()) >= 40]
+        cross = [l for l in body if l["rect"].x0 < self.mid - 15 and l["rect"].x1 > self.mid + 15]
+        if len(body) >= 6 and len(cross) >= 0.3 * len(body):
+            self.single = True
+            for l in self.lines:
+                l["col"] = 0
         self.lines.sort(key=lambda l: (l["col"], l["rect"].y0, l["rect"].x0))
         self.rules = []
         self.small_drawings = []
@@ -120,13 +130,29 @@ class Page:
                 self.col_bounds[c] = (x0s[len(x0s) // 20] - 4, max(r.x1 for r in xs) + 4)
         self.col_bounds.setdefault(0, (self.rect.x0 + 10, self.mid - 2))
         self.col_bounds.setdefault(1, (self.mid + 2, self.rect.x1 - 10))
-        if self.col_bounds[0][1] > self.mid + 10:  # página de coluna única
+        if self.single:
+            xs = [l["rect"] for l in self.lines]
+            self.col_bounds[0] = (min((r.x0 for r in xs), default=self.rect.x0 + 10) - 4,
+                                  max((r.x1 for r in xs), default=self.rect.x1 - 10) + 4)
+        elif self.col_bounds[0][1] > self.mid + 10:
             self.col_bounds[0] = (self.col_bounds[0][0], self.mid - 2)
+        # 2 = largura toda (figura que atravessa as duas colunas)
+        self.col_bounds[2] = (min(self.col_bounds[0][0], self.col_bounds[1][0]), max(self.col_bounds[0][1], self.col_bounds[1][1]))
 
     def col_of(self, r):
+        if self.single:
+            return 0
         return 0 if (r.x0 + r.x1) / 2 < self.mid else 1
 
+    def fig_col(self, r):
+        """Coluna para recortar a figura: 2 quando ela atravessa o meio de uma página de 2 colunas."""
+        if not self.single and r.x0 < self.mid - 30 and r.x1 > self.mid + 30:
+            return 2
+        return self.col_of(r)
+
     def col_rect(self, col):
+        if self.single or col == 2:
+            return pymupdf.Rect(self.rect.x0 + 3, self.rect.y0 + 4, self.rect.x1 - 3, self.rect.y1 - 4)
         if col == 0:
             return pymupdf.Rect(self.rect.x0 + 3, self.rect.y0 + 4, self.mid - 4, self.rect.y1 - 4)
         return pymupdf.Rect(self.mid + 4, self.rect.y0 + 4, self.rect.x1 - 3, self.rect.y1 - 4)
@@ -179,7 +205,31 @@ def find_headers(pages):
 
 
 # ----------------------------------------------------------------------------- figuras
-def figure_candidates(p):
+def img_key(r):
+    return tuple(round(x) for x in r)
+
+
+def table_rects(p):
+    """Tabelas desenhadas com linhas (PyMuPDF find_tables), sem as 'tabelas' de layout de página inteira."""
+    W, H = p.rect.width, p.rect.height
+    out = []
+    try:
+        tabs = p.pg.find_tables().tables
+    except Exception:
+        return out
+    for t in tabs:
+        r = pymupdf.Rect(t.bbox) & p.rect
+        if t.row_count < 2 or t.col_count < 2 or r.width < 40 or r.height < 18:
+            continue
+        if r.get_area() > 0.45 * W * H:
+            continue  # moldura da página / folha de respostas
+        if any(r.contains(l["rect"]) and (ANCHOR_RE.match(l["text"]) or ANCHOR_ALT_RE.match(l["text"])) for l in p.lines):
+            continue  # contém número de questão: é layout, não tabela
+        out.append(r)
+    return out
+
+
+def figure_candidates(p, deco=frozenset()):
     pg = p.pg
     W, H = p.rect.width, p.rect.height
     items, ignored = [], []
@@ -187,6 +237,8 @@ def figure_candidates(p):
         r = pymupdf.Rect(im["bbox"]) & p.rect
         if r.is_empty or r.width < 6 or r.height < 6:
             continue
+        if img_key(r) in deco:
+            continue  # mesma imagem no mesmo lugar em várias páginas: logotipo, marca d'água, rodapé
         if r.width * r.height > 0.8 * W * H:
             ignored.append({"bbox": list(r), "reason": "imagem de página inteira (PDF escaneado?)"})
             continue
@@ -202,6 +254,7 @@ def figure_candidates(p):
         if red:
             continue  # carimbo ANULADA / marcação do gabarito
         drects.append((r, red))
+    tabs = table_rects(p)
     # agrupa desenhos próximos
     clusters = []
     for r, red in drects:
@@ -239,8 +292,12 @@ def figure_candidates(p):
         # moldura em volta de texto (caixa de enunciado) — só borda, texto dentro
         inside = [l for l in p.lines if l["rect"].intersects(r)]
         if c["n"] <= 4 and len(inside) >= 3:
+            if not any(t.intersects(r) for t in tabs):
+                ignored.append({"bbox": list(r), "reason": "caixa com texto (quadro de enunciado?) — clique se for figura"})
             continue
         items.append({"rect": r, "src": "vetor"})
+    for t in tabs:
+        items.append({"rect": t, "src": "tabela"})
     # junta peças sobrepostas/encostadas (imagem fatiada, vetor + imagem)
     def has_label(r):
         for l in p.lines:
@@ -271,6 +328,8 @@ def classify(p, fig, has_latex=False):
     """'formula' (imagem inline no meio do texto), 'alt' (alternativa em imagem) ou 'figura'."""
     r = fig["rect"]
     col = p.col_of(r)
+    if "tabela" in fig.get("srcs", ()):
+        return "figura", None, None
     for l in p.lines:
         if l["col"] != col:
             continue
@@ -313,11 +372,15 @@ def classify(p, fig, has_latex=False):
 def crop_rect(p, fig_rect, label_rect=None, margin_frac=0.20, others=()):
     """Margem de respiro, encolhida para não engolir texto alheio (enunciado, alternativas, gabarito)."""
     r0 = pymupdf.Rect(fig_rect)
-    col = p.col_of(r0)
+    col = p.fig_col(r0)
+
+    def other_col(l):
+        return col != 2 and l["col"] != col
+
     for l in p.lines:
         lr = l["rect"]
         paragraph = lr.x0 - p.col_bounds[col][0] < 8 or LETTER_RE.match(l["text"]) or l["red"]
-        if l["col"] != col or not lr.intersects(r0) or (len(l["text"].strip()) < 25 and not paragraph):
+        if other_col(l) or not lr.intersects(r0) or (len(l["text"].strip()) < 25 and not paragraph):
             continue
         inter = lr & r0
         if inter.get_area() > 0.85 * lr.get_area() and r0.y0 + 15 < lr.y0 and lr.y1 < r0.y1 - 15:
@@ -336,7 +399,7 @@ def crop_rect(p, fig_rect, label_rect=None, margin_frac=0.20, others=()):
     for l in p.lines:
         lr = l["rect"]
         t = l["text"].strip()
-        if l["col"] != col or lr.intersects(r0):
+        if other_col(l) or lr.intersects(r0):
             continue
         if lr.x0 - p.col_bounds[col][0] < 8 and lr.x1 < r0.x0 - 2 or (len(t) > 3 and lr.x0 - p.col_bounds[col][0] < 8 and not lr.intersects(fig_rect)):
             continue  # texto de parágrafo, não é rótulo da figura
@@ -447,13 +510,19 @@ def process(pdf_path, json_path=None, workspace=WORKSPACE, log=print):
         fn = f"p{p.index + 1:02d}.png"
         w, h = render(p.pg, p.rect, os.path.join(wdir, "pages", fn))
         pages_meta.append({"n": p.index + 1, "file": f"pages/{fn}", "pdf_w": p.rect.width, "pdf_h": p.rect.height,
-                           "px_w": w, "px_h": h})
+                           "px_w": w, "px_h": h, "single": p.single})
     crops, ignored = [], []
     first_anchor_page = anchors[0]["page"] if anchors else 0
+    # imagem repetida no mesmo lugar em 3+ páginas = decoração (logotipo, marca d'água)
+    seen = {}
+    for p in pages:
+        for k in {img_key(pymupdf.Rect(im["bbox"]) & p.rect) for im in p.pg.get_image_info()}:
+            seen[k] = seen.get(k, 0) + 1
+    deco = frozenset(k for k, v in seen.items() if v >= 3)
     for p in pages:
         if p.index < first_anchor_page:
             continue
-        figs, ign = figure_candidates(p)
+        figs, ign = figure_candidates(p, deco)
         for g in ign:
             g["page"] = p.index + 1
             ignored.append(g)
@@ -505,7 +574,14 @@ def process(pdf_path, json_path=None, workspace=WORKSPACE, log=print):
                 flags.append("antes da primeira questão")
             if not owners:
                 continue
-            if "vetor" in f["srcs"] and "img" not in f["srcs"]:
+            if "tabela" in f["srcs"] and "img" not in f["srcs"]:
+                st_ = qj.get("statement_cleaned") or qj.get("statement") or ""
+                if st_.count("|") >= 4:
+                    conf = min(conf, 0.7)
+                    flags.append("tabela — o JSON já tem esta tabela em texto; aprove só se quiser a imagem")
+                else:
+                    flags.append("tabela que não está no texto do JSON")
+            elif "vetor" in f["srcs"] and "img" not in f["srcs"]:
                 conf -= 0.12
                 flags.append("desenho vetorial")
             if f["pieces"] > 3:
@@ -551,8 +627,13 @@ def process(pdf_path, json_path=None, workspace=WORKSPACE, log=print):
         warn = []
         if n not in anchor_by_n:
             warn.append("âncora não encontrada no PDF")
-        if cita and not cs:
+        ph = PLACEHOLDER_RE.search(st + " " + " ".join(str(a["text"]) for a in alts))
+        if ph and not cs and not q.get("imagens"):
+            warn.append(f"o JSON tem o marcador {ph.group(0)[:40]} (imagem/fórmula não transcrita), mas nada foi detectado")
+        elif cita and not cs:
             warn.append("enunciado cita figura, mas nada foi detectado")
+        elif q.get("has_image") and not cs and not q.get("imagens"):
+            warn.append("o JSON marca has_image, mas nada foi detectado no PDF")
         alt_letters = sorted({c["letter"] for c in cs if c["role"] == "alt"})
         if alt_letters and alts and all(norm_tokens(a["text"]) for a in alts) and                 not any("$" in str(a["text"]) for a in alts):
             warn.append("alternativas são imagem no PDF, mas o JSON tem texto — confira se não foi inventado na extração")
@@ -571,6 +652,7 @@ def process(pdf_path, json_path=None, workspace=WORKSPACE, log=print):
         "prova_id": pid, "pdf": pdf_path, "json": json_path, "banca": meta.get("banca"), "ano": meta.get("ano"),
         "criado_em": datetime.datetime.now().isoformat(timespec="seconds"), "dpi": DPI,
         "pages": pages_meta, "questions": questions, "crops": crops, "ignored": ignored,
+        "ancoras": anchors_meta(anchors),
     }
     old = os.path.join(wdir, "manifest.json")
     if os.path.exists(old):  # preserva decisões já tomadas
@@ -583,9 +665,30 @@ def process(pdf_path, json_path=None, workspace=WORKSPACE, log=print):
             if "recorte manual" in old_c.get("flags", []):  # ajuste manual vence a detecção automática
                 manifest["crops"][i] = old_c
                 render(doc[old_c["page"] - 1], pymupdf.Rect(old_c["rect_pdf"]), os.path.join(wdir, old_c["file"]))
-            elif old_c["status"] != "pendente":
-                c["status"] = old_c["status"]
+            elif old_c["status"] != "pendente" and old_c["questions"] == c["questions"]:
+                c["status"] = old_c["status"]  # decisão só vale se a figura continua na mesma questão
         manifest["crops"] += [c for c in prev.get("crops", []) if c.get("origem") == "manual"]
+        # recorte aprovado ou ajustado à mão que a detecção nova não reproduz (a área mudou): não some
+        ids_now = {c["id"] for c in manifest["crops"]}
+        files = {c["file"] for c in manifest["crops"]}
+        for oc in prev.get("crops", []):
+            if oc["id"] in ids_now or (oc["status"] != "aprovado" and "recorte manual" not in oc.get("flags", [])):
+                continue
+            oc = dict(oc, flags=oc.get("flags", []) + ["mantido do processamento anterior (a detecção mudou)"])
+            if oc["file"] in files:
+                k = 1
+                while f"{oc['file'][:-4]}_ant{k}.png" in files:
+                    k += 1
+                oc["file"] = f"{oc['file'][:-4]}_ant{k}.png"
+            render(doc[oc["page"] - 1], pymupdf.Rect(oc["rect_pdf"]), os.path.join(wdir, oc["file"]))
+            files.add(oc["file"])
+            R_old = pymupdf.Rect(oc["rect_pdf"])
+            for c in manifest["crops"]:
+                if c["page"] == oc["page"] and set(c["questions"]) & set(oc["questions"]) and \
+                        (pymupdf.Rect(c["rect_pdf"]) & R_old).get_area() > 0.3 * R_old.get_area():
+                    c["status"] = "pendente"
+                    c["flags"].append("versão nova de um recorte já aprovado — compare e fique com um dos dois")
+            manifest["crops"].append(oc)
     # mesma questão (mesmo id) já está na área de trabalho de uma prova irmã processada antes: revise lá
     sib_ids = set()
     if json_path:
@@ -634,6 +737,24 @@ def process(pdf_path, json_path=None, workspace=WORKSPACE, log=print):
     return manifest
 
 
+def anchors_meta(anchors):
+    """Âncoras das questões (página 1-based, coluna, y) — a tela usa para dizer de que questão é uma caixa da IA."""
+    return [{"n": a["n"], "page": a["page"] + 1, "col": a["col"], "y": round(a["y"], 1)} for a in anchors]
+
+
+def ensure_layout(manifest):
+    """Manifests antigos não têm âncoras nem a marca de coluna única: calcula a partir do PDF (sem recortar nada)."""
+    if "ancoras" in manifest and all("single" in p for p in manifest["pages"]):
+        return False
+    doc = pymupdf.open(manifest["pdf"])
+    pages = [Page(doc[i], i) for i in range(len(doc))]
+    qn = {int(n) for n in manifest["questions"]}
+    manifest["ancoras"] = anchors_meta(find_anchors(pages, qn or None))
+    for pm in manifest["pages"]:
+        pm["single"] = pages[pm["n"] - 1].single
+    return True
+
+
 def save_manifest(wdir, manifest):
     tmp = os.path.join(wdir, "manifest.json.tmp")
     with open(tmp, "w", encoding="utf-8") as f:
@@ -650,6 +771,9 @@ def recrop(wdir, manifest, page_n, rect_pdf, crop_id=None, question=None, role="
         c = next(c for c in manifest["crops"] if c["id"] == crop_id)
         c["v"] = c.get("v", 1) + 1
         c["page"] = page_n
+        if role:  # trocar o tipo (enunciado / alternativa X / texto-base) ao recortar de novo
+            c["role"] = role
+            c["letter"] = letter if role == "alt" else None
     else:
         q = int(question)
         suffix = f"_alt{letter.upper()}" if role == "alt" and letter else ""
@@ -745,32 +869,86 @@ def _apply(d, jp, pid, plan, shared, log):
     return n
 
 
-def export(wdir, manifest, backup_root):
+def _last_backup(jp, backup_root):
+    """Backup mais recente deste JSON em logs/system4_image/backup/<stamp>/<rel>."""
+    rel = os.path.relpath(jp, DOCS)
+    if rel.startswith(".."):
+        rel = os.path.basename(jp)
+    if not os.path.isdir(backup_root):
+        return None
+    for stamp in sorted(os.listdir(backup_root), reverse=True):
+        if os.path.isfile(os.path.join(backup_root, stamp, rel)):
+            return {"stamp": stamp, "path": os.path.join(backup_root, stamp, rel)}
+    return None
+
+
+def _file_info(jp, backup_root):
+    st = os.stat(jp)
+    return {"arquivo": os.path.basename(jp), "caminho": jp,
+            "modificado_em": datetime.datetime.fromtimestamp(st.st_mtime).isoformat(timespec="seconds"),
+            "tamanho": st.st_size, "ultimo_backup": _last_backup(jp, backup_root)}
+
+
+_DIFF_KEYS = ("imagens", "has_image", "imagem_associada_id")
+
+
+def _diff_questions(before, after):
+    """Lista o que mudou em cada questão (por id) entre duas versões do JSON."""
+    b_by = {q.get("id"): q for q in before.get("questions") or []}
+    out = []
+    for q in after.get("questions") or []:
+        old = b_by.get(q.get("id"))
+        if old is None or old == q:
+            continue
+        ch = []
+        for k in _DIFF_KEYS:
+            if old.get(k) != q.get(k):
+                ch.append({"campo": k, "antes": old.get(k), "depois": q.get(k)})
+        oa = {str(a.get("letter", "")).upper(): a.get("text") for a in old.get("alternatives") or []}
+        for a in q.get("alternatives") or []:
+            L = str(a.get("letter", "")).upper()
+            if oa.get(L) != a.get("text"):
+                ch.append({"campo": f"alternativa {L}", "antes": oa.get(L), "depois": a.get("text")})
+        if ch:
+            out.append({"id": q.get("id"), "n": q.get("source_number"), "mudancas": ch,
+                        "atual": {k: old.get(k) for k in ("imagens", "has_image", "imagem_associada_id", "status")}})
+    ib = {x.get("id"): x for x in before.get("imagens_associadas") or []}
+    assoc = []
+    for x in after.get("imagens_associadas") or []:
+        if ib.get(x.get("id")) != x:
+            assoc.append({"id": x.get("id"), "novo": x.get("id") not in ib, "title": x.get("title"),
+                          "source_numbers": x.get("source_numbers")})
+    return out, assoc
+
+
+def export(wdir, manifest, backup_root, dry_run=False, questions=None, irmas=None):
     """Copia os recortes aprovados para <pasta da prova>/imagens e grava no JSON e nas provas irmãs
-    (mesmo id em outro JSON da mesma pasta extracao/, ex.: CFS OP1 -> OP2). Backup + escrita atômica."""
+    (mesmo id em outro JSON da mesma pasta extracao/, ex.: CFS OP1 -> OP2). Backup + escrita atômica.
+
+    dry_run: não grava nada; devolve o que mudaria (por questão, antes/depois) em cada JSON.
+    questions: números das questões a gravar (None = todas com recorte aprovado).
+    irmas: nomes dos JSONs irmãos a espelhar (None = todos os que têm o mesmo id; [] = nenhum)."""
+    import copy
     import shutil
     pdf_dir = os.path.dirname(manifest["pdf"])
     img_dir = os.path.join(pdf_dir, "imagens")
-    os.makedirs(img_dir, exist_ok=True)
     pid = manifest["prova_id"]
-    aprov = [c for c in manifest["crops"] if c["status"] == "aprovado"]
-    result = {"imagens_copiadas": 0, "pasta": img_dir, "json_atualizado": False, "questoes": 0, "irmas": {}, "log": []}
+    sel = set(int(n) for n in questions) if questions is not None else None
+    aprov = [c for c in manifest["crops"] if c["status"] == "aprovado" and (sel is None or sel & set(c["questions"]))]
+    result = {"imagens_copiadas": 0, "pasta": img_dir, "json_atualizado": False, "questoes": 0, "irmas": {}, "log": [],
+              "dry_run": dry_run, "arquivos": [], "jsons": []}
     jp = manifest.get("json")
     d = json.load(open(jp, encoding="utf-8")) if jp and os.path.exists(jp) else None
     num2id = {q.get("source_number"): q.get("id") for q in d["questions"]} if d else {}
-    plan, shared = {}, []
+    plan, shared, copies = {}, [], []
     pages_used = set()
     for c in aprov:
-        src = os.path.join(wdir, c["file"])
         pages_used.add(c["page"])
         if c["role"] == "alt" and c.get("letter") and d:
-            n = c["questions"][0]
-            qid = num2id.get(n)
-            name = _alt_name(qid, c["letter"])
+            name = _alt_name(num2id.get(c["questions"][0]), c["letter"])
         else:
             name = os.path.basename(c["file"])
-        shutil.copy2(src, os.path.join(img_dir, name))
-        result["imagens_copiadas"] += 1
+        copies.append((os.path.join(wdir, c["file"]), name))
         url = "../imagens/" + name
         if not d:
             continue
@@ -787,17 +965,37 @@ def export(wdir, manifest, backup_root):
             else:
                 it["stmt"].append(url)
     for pn in sorted(pages_used):  # fallback página inteira (manual §8.2)
-        shutil.copy2(os.path.join(wdir, "pages", f"p{pn:02d}.png"), os.path.join(img_dir, f"{pid}_p{pn}_full.png"))
+        copies.append((os.path.join(wdir, "pages", f"p{pn:02d}.png"), f"{pid}_p{pn}_full.png"))
+    for src, name in copies:
+        dst = os.path.join(img_dir, name)
+        result["arquivos"].append({"nome": name, "substitui": os.path.exists(dst)})
+        if not dry_run:
+            os.makedirs(img_dir, exist_ok=True)
+            shutil.copy2(src, dst)
         result["imagens_copiadas"] += 1
     if not d:
         return result
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    result["backup"] = _backup_json(jp, backup_root, stamp)
-    result["questoes"] = _apply(d, jp, pid, plan, shared, result["log"])
-    _save_json(jp, d)
-    result["json_atualizado"] = True
+
+    def run(path, data, p, principal):
+        before = copy.deepcopy(data)
+        info = _file_info(path, backup_root)
+        if not dry_run:
+            info["backup"] = _backup_json(path, backup_root, stamp)
+        k = _apply(data, path, pid, p, shared, result["log"])
+        info["questoes"], info["imagens_associadas"] = _diff_questions(before, data)
+        info["principal"] = principal
+        if not dry_run:
+            _save_json(path, data)
+        result["jsons"].append(info)
+        return k, info
+
+    result["questoes"], info = run(jp, d, plan, True)
+    result["backup"] = info.get("backup")
+    result["json_atualizado"] = not dry_run
     # provas irmãs: mesma pasta extracao/, mesmo id de questão
     ids = set(plan) | {i for s, _ in shared for i in s}
+    result["irmas_disponiveis"] = []
     for sib in sorted(glob.glob(os.path.join(os.path.dirname(jp), "*_LLM.json"))):
         if os.path.samefile(sib, jp):
             continue
@@ -809,15 +1007,17 @@ def export(wdir, manifest, backup_root):
             continue
         if not ids & {q.get("id") for q in sd["questions"]}:
             continue
-        _backup_json(sib, backup_root, stamp)
+        name = os.path.basename(sib)
+        result["irmas_disponiveis"].append(name)
+        if irmas is not None and name not in irmas and not dry_run:
+            continue
         sib_plan = {}
         for qid, it in plan.items():
             sq = next((q for q in sd["questions"] if q.get("id") == qid), None)
             if sq:
                 sib_plan[qid] = {"n": sq["source_number"], "stmt": it["stmt"], "alts": it["alts"]}
-        k = _apply(sd, sib, pid, sib_plan, shared, result["log"])
-        _save_json(sib, sd)
-        result["irmas"][os.path.basename(sib)] = k
+        k, _ = run(sib, sd, sib_plan, False)
+        result["irmas"][name] = k
     return result
 
 
