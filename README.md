@@ -26,6 +26,6 @@ python engine.py <prova.pdf> --json <prova_LLM.json>
 
 ## Acervo
 
-O motor lê e grava no acervo do System 3.0 (`Documentos/`, `logs/`). Por padrão, o acervo é a pasta dois níveis acima deste repositório (`System3.0/scripts/system4_image`). Em outro lugar, defina `SYSTEM3_ROOT` com o caminho do acervo.
+O motor lê e grava no acervo do System 3.0 (`Documentos/`, `logs/`). O caminho do acervo vem da variável `SYSTEM3_ROOT` (ex.: `C:\Users\marco\Documents\CLAUDE\System3.0`). Se ela não estiver definida, o `.bat` usa `%USERPROFILE%\Documents\CLAUDE\System3.0`.
 
 A pasta `workspace/` guarda os recortes de trabalho e não vai para o repositório.
