@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System 4.0 Image</title>
+<style>
+:root{
+  --bg:#f6f7f9; --sf:#ffffff; --sf2:#f0f2f5; --bd:#e2e5ea; --tx:#14181f; --tm:#5f6b7a;
+  --ac:#2563eb; --ac-s:#dbe7fe; --ok:#0f9d58; --ok-s:#d7f3e3; --bad:#d93025; --bad-s:#fde3e1;
+  --wr:#b26a00; --wr-s:#fff1d6; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --r:10px; --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1218; --sf:#171b23; --sf2:#1e232d; --bd:#2a303c; --tx:#e8ebf0; --tm:#97a1b0;
+  --ac:#6b9bff; --ac-s:#1c2a48; --ok:#34c77b; --ok-s:#143323; --bad:#ff6b5e; --bad-s:#3b1714;
+  --wr:#f0b04a; --wr-s:#3a2a10; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1218; --sf:#171b23; --sf2:#1e232d; --bd:#2a303c; --tx:#e8ebf0; --tm:#97a1b0;
+  --ac:#6b9bff; --ac-s:#1c2a48; --ok:#34c77b; --ok-s:#143323; --bad:#ff6b5e; --bad-s:#3b1714;
+  --wr:#f0b04a; --wr-s:#3a2a10; --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--sf);border-radius:8px;padding:6px 11px}
+button:hover{border-color:var(--tm)}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+button.pri:hover{filter:brightness(1.07)}
+button:disabled{opacity:.5;cursor:default}
+input,select{font:inherit;color:inherit;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
+header{position:sticky;top:0;z-index:20;background:var(--sf);border-bottom:1px solid var(--bd);box-shadow:var(--shadow)}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 18px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:16px;letter-spacing:-.01em;margin-right:6px;white-space:nowrap}
+.brand span{color:var(--ac)}
+.grow{flex:1}
+.stats{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;background:var(--sf2);color:var(--tm);font-size:12.5px;white-space:nowrap}
+.chip b{color:var(--tx);font-variant-numeric:tabular-nums}
+.chip.ok{background:var(--ok-s);color:var(--ok)} .chip.bad{background:var(--bad-s);color:var(--bad)} .chip.wr{background:var(--wr-s);color:var(--wr)}
+.filters{display:flex;gap:6px;padding:0 18px 10px;flex-wrap:wrap;align-items:center}
+.filters button{padding:4px 10px;font-size:13px}
+.filters button.on{background:var(--ac-s);border-color:var(--ac);color:var(--ac)}
+main{padding:18px;max-width:1700px;margin:0 auto}
+.empty{color:var(--tm);text-align:center;padding:80px 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.card h3{margin:0;font-size:14px;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd)}
+.card h3 .pg{color:var(--tm);font-weight:400;font-size:12.5px}
+.warns{display:flex;flex-direction:column;gap:4px;padding:8px 12px 0}
+.warn{font-size:12.5px;color:var(--wr);background:var(--wr-s);border-radius:6px;padding:3px 8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:10px 12px}
+.tile{border:2px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--sf2);display:flex;flex-direction:column;outline:none}
+.tile.sel{box-shadow:0 0 0 3px var(--ac-s);border-color:var(--ac)}
+.tile.aprovado{border-color:var(--ok)} .tile.rejeitado{border-color:var(--bad);opacity:.55} .tile.herdado{border-style:dashed;opacity:.7}
+.tile .img{background:#fff;display:flex;align-items:center;justify-content:center;height:150px;cursor:zoom-in}
+.tile img{max-width:100%;max-height:150px;display:block}
+.tile .meta{display:flex;align-items:center;gap:6px;padding:5px 7px;font-size:12px;color:var(--tm)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.h{background:var(--ok)} .dot.m{background:var(--wr)} .dot.l{background:var(--bad)}
+.role{font-weight:600;color:var(--tx)}
+.flags{font-size:11.5px;color:var(--tm);padding:0 7px 4px;min-height:0}
+.acts{display:flex;border-top:1px solid var(--bd)}
+.acts button{flex:1;border:0;border-radius:0;background:transparent;padding:5px 0;font-size:13px}
+.acts button+button{border-left:1px solid var(--bd)}
+.acts button:hover{background:var(--sf)}
+.acts .a:hover{color:var(--ok)} .acts .r:hover{color:var(--bad)}
+.qtext{padding:0 12px 10px;font-size:12.5px;color:var(--tm)}
+.qtext summary{cursor:pointer;color:var(--tx);font-size:12.5px;padding:2px 0}
+.qtext p{margin:6px 0;white-space:pre-wrap;max-height:180px;overflow:auto}
+.qtext ol{margin:4px 0 0;padding-left:20px} .qtext li{margin:1px 0}
+.qtext .pdf{background:var(--sf2);border-radius:6px;padding:6px;font-family:var(--mono);font-size:11.5px}
+.cardfoot{display:flex;gap:6px;padding:0 12px 12px}
+.cardfoot button{font-size:12.5px;padding:4px 9px}
+.sect{margin:26px 0 10px;font-size:13px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.04em}
+.ign{display:flex;flex-wrap:wrap;gap:6px}
+.ign button{font-size:12px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,14,20,.6);display:none;z-index:50;align-items:center;justify-content:center;padding:16px}
+.modal.on{display:flex}
+.box{background:var(--sf);border:1px solid var(--bd);border-radius:12px;max-width:min(1100px,100%);width:100%;max-height:100%;display:flex;flex-direction:column;overflow:hidden}
+.box .hd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.box .hd h2{margin:0;font-size:15px}
+.box .bd{overflow:auto;padding:14px 16px;flex:1 1 auto;min-height:0}
+.box .ft{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--bd);flex-wrap:wrap;align-items:center}
+.stage{position:relative;display:inline-block;user-select:none;-webkit-user-select:none;cursor:crosshair;background:#fff;line-height:0;touch-action:none}
+.stage img{display:block;height:min(72vh,1100px);width:auto;max-width:none}
+.sel-rect{position:absolute;border:2px solid var(--ac);background:rgba(37,99,235,.12);pointer-events:none}
+.old-rect{position:absolute;border:2px dashed var(--wr);pointer-events:none}
+.pdflist{display:flex;flex-direction:column;gap:2px;max-height:55vh;overflow:auto;margin-top:10px}
+.pdflist button{text-align:left;border:0;border-radius:6px;display:flex;gap:8px;align-items:center;padding:6px 8px}
+.pdflist button:hover{background:var(--sf2)}
+.pdflist .tag{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--sf2);color:var(--tm)}
+.pdflist .tag.ok{background:var(--ok-s);color:var(--ok)}
+.zoom img{max-width:100%;background:#fff}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:9px 16px;border-radius:8px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+.busy{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:70;display:none;align-items:center;justify-content:center;color:#fff;font-size:15px}
+.busy.on{display:flex}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--bd);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--sf2)}
+.help{color:var(--tm);font-size:12px}
+@media (max-width:600px){.bar{padding:10px 16px}.filters{padding:0 16px 10px}main{padding:16px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">System <span>4.0</span> Image</div>
+    <select id="prova" title="Prova processada"></select>
+    <button id="btnImport" class="pri">Importar PDF</button>
+    <div class="stats" id="stats"></div>
+    <div class="grow"></div>
+    <button id="btnBulk" title="Aprova todos os recortes pendentes com confiança alta">Aprovar alta confiança</button>
+    <button id="btnExport" class="pri">Exportar aprovados</button>
+    <button id="btnTheme" title="Tema claro/escuro">◐</button>
+  </div>
+  <div class="filters" id="filters">
+    <button data-f="todas" class="on">Todas</button>
+    <button data-f="pendente">Pendentes</button>
+    <button data-f="baixa">Confiança baixa/média</button>
+    <button data-f="alertas">Com alerta</button>
+    <button data-f="aprovado">Aprovadas</button>
+    <button data-f="rejeitado">Rejeitadas</button>
+    <button data-f="semimg">Sem imagem</button>
+    <button data-f="herdado">Herdadas</button>
+    <span class="grow"></span>
+    <span class="help"><kbd>J</kbd>/<kbd>K</kbd> navegar · <kbd>A</kbd> aprovar · <kbd>R</kbd> rejeitar · <kbd>C</kbd> recortar · <kbd>Z</kbd> ampliar</span>
+  </div>
+</header>
+<main id="main"><div class="empty">Carregando…</div></main>
+
+<div class="modal" id="mImport"><div class="box">
+  <div class="hd"><h2>Importar PDF</h2><span class="grow"></span><button data-close>Fechar</button></div>
+  <div class="bd">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="pdfSearch" placeholder="Buscar prova em Documentos (ex.: EEAR 2021 CFS1)" style="flex:1;min-width:220px">
+      <label class="help">ou enviar arquivo: <input type="file" id="pdfFile" accept="application/pdf"></label>
+    </div>
+    <div class="pdflist" id="pdfList"></div>
+  </div>
+</div></div>
+
+<div class="modal" id="mCrop"><div class="box">
+  <div class="hd">
+    <h2 id="cropTitle">Recortar</h2>
+    <button id="pgPrev">◀ página</button><span id="pgLbl" class="help"></span><button id="pgNext">página ▶</button>
+    <select id="cropRole"><option value="enunciado">Enunciado</option><option value="alt">Alternativa</option><option value="texto_base">Texto-base</option></select>
+    <select id="cropLetter"><option>a</option><option>b</option><option>c</option><option>d</option><option>e</option></select>
+    <span class="grow"></span><button data-close>Cancelar</button>
+  </div>
+  <div class="bd" style="text-align:center"><div class="stage" id="stage"><img id="pageImg" alt="Página da prova" draggable="false"><div class="old-rect" id="oldRect"></div><div class="sel-rect" id="selRect" hidden></div></div></div>
+  <div class="ft"><span class="help">Arraste para marcar a área. O recorte é refeito do PDF a 150 DPI. <kbd>Enter</kbd> salva · <kbd>Esc</kbd> cancela</span><span class="grow"></span><button id="cropSave" class="pri" disabled>Salvar recorte</button></div>
+</div></div>
+
+<div class="modal" id="mZoom"><div class="box"><div class="hd"><h2 id="zoomTitle"></h2><span class="grow"></span><button data-close>Fechar</button></div><div class="bd zoom" style="text-align:center"><img id="zoomImg" alt=""></div></div></div>
+<div class="toast" id="toast"></div>
+<div class="busy" id="busy">Processando…</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let M = null, PID = null, FILTER = 'todas', SEL = null, PDFS = [];
+const api = async (url, body) => {
+  const r = await fetch(url, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body: body instanceof Blob ? body : JSON.stringify(body)});
+  const j = await r.json(); if (!r.ok) throw new Error(j.erro || r.statusText); return j;
+};
+const toast = (t, ms=2600) => { const e=$('#toast'); e.textContent=t; e.classList.add('on'); clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove('on'), ms); };
+const busy = (on, t='Processando…') => { $('#busy').textContent=t; $('#busy').classList.toggle('on', on); };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lvl = c => c >= .85 ? 'h' : c >= .6 ? 'm' : 'l';
+const lvlTxt = {h:'alta', m:'média', l:'baixa'};
+const roleTxt = c => c.role === 'alt' ? `Alternativa ${c.letter?.toUpperCase()}` : c.role === 'texto_base' ? 'Texto-base' : 'Enunciado';
+const imgUrl = (f, v) => `/ws/${encodeURIComponent(PID)}/${f}?v=${v||1}`;
+
+try { const t = localStorage.getItem('s4i-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e) {}
+$('#btnTheme').onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const nx = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = nx;
+  try { localStorage.setItem('s4i-theme', nx); } catch(e) {}
+};
+
+async function loadProvas(select) {
+  const ps = await api('/api/provas');
+  const sel = $('#prova');
+  sel.innerHTML = ps.length ? ps.map(p => `<option value="${esc(p.prova_id)}">${esc(p.prova_id)} — ${p.recortes} recortes</option>`).join('') : '<option value="">(nenhuma prova processada)</option>';
+  let want = select;
+  if (!want) { try { want = localStorage.getItem('s4i-prova'); } catch(e) {} }
+  if (want && ps.some(p => p.prova_id === want)) sel.value = want;
+  if (sel.value) await openProva(sel.value); else { $('#main').innerHTML = '<div class="empty">Nenhuma prova ainda. Clique em <b>Importar PDF</b>.</div>'; renderStats(); }
+}
+$('#prova').onchange = e => openProva(e.target.value);
+
+async function openProva(pid) {
+  PID = pid; try { localStorage.setItem('s4i-prova', pid); } catch(e) {}
+  M = await api('/api/manifest?prova=' + encodeURIComponent(pid));
+  render();
+}
+
+function renderStats() {
+  if (!M) { $('#stats').innerHTML = ''; return; }
+  const cs = M.crops, n = s => cs.filter(c => c.status === s).length;
+  const qs = Object.values(M.questions);
+  $('#stats').innerHTML = `
+    <span class="chip">recortes <b>${cs.length}</b></span>
+    <span class="chip">pendentes <b>${n('pendente')}</b></span>
+    <span class="chip ok">aprovados <b>${n('aprovado')}</b></span>
+    <span class="chip bad">rejeitados <b>${n('rejeitado')}</b></span>
+    ${n('herdado') ? `<span class="chip" title="Questões que já têm imagem no JSON (exportadas antes ou da prova irmã OP1/OP2)">herdadas <b>${n('herdado')}</b></span>` : ''}
+    <span class="chip wr">questões com alerta <b>${qs.filter(q => q.warnings.length).length}</b></span>`;
+}
+
+function cropsOf(n) { return M.crops.filter(c => c.questions.includes(n)); }
+
+function visibleQuestions() {
+  const qs = Object.values(M.questions).sort((a,b) => a.n - b.n);
+  return qs.filter(q => {
+    const cs = cropsOf(q.n);
+    switch (FILTER) {
+      case 'todas': return cs.some(c => c.status !== 'herdado') || q.warnings.length;
+      case 'pendente': return cs.some(c => c.status === 'pendente');
+      case 'baixa': return cs.some(c => c.confidence < .85);
+      case 'alertas': return q.warnings.length;
+      case 'aprovado': return cs.some(c => c.status === 'aprovado');
+      case 'rejeitado': return cs.some(c => c.status === 'rejeitado');
+      case 'semimg': return !cs.length;
+      case 'herdado': return cs.some(c => c.status === 'herdado');
+    }
+  });
+}
+
+function tileHtml(c, n) {
+  const l = lvl(c.confidence);
+  const multi = c.questions.length > 1 ? ` · questões ${c.questions[0]}–${c.questions[c.questions.length-1]}` : '';
+  return `<div class="tile ${c.status}" tabindex="0" data-id="${c.id}" data-q="${n}">
+    <div class="img" data-zoom="${c.id}"><img loading="lazy" src="${imgUrl(c.file, c.v)}" alt="${esc(roleTxt(c))} da questão ${n}"></div>
+    <div class="meta"><span class="dot ${l}" title="confiança ${lvlTxt[l]} (${c.confidence})"></span><span class="role">${esc(roleTxt(c))}</span><span>p${c.page}${multi}</span></div>
+    ${c.flags.length ? `<div class="flags">${esc(c.flags.join(' · '))}</div>` : ''}
+    <div class="acts">
+      <button class="a" data-act="aprovado" title="Aprovar (A)">✓</button>
+      <button class="r" data-act="rejeitado" title="Rejeitar (R)">✕</button>
+      <button data-act="crop" title="Recortar manualmente (C)">✂</button>
+      <button data-act="path" title="Copiar caminho do arquivo">⧉</button>
+      <button data-act="reveal" title="Mostrar na pasta">📂</button>
+    </div></div>`;
+}
+
+function render() {
+  renderStats();
+  const qs = visibleQuestions();
+  const main = $('#main');
+  if (!qs.length) { main.innerHTML = '<div class="empty">Nada neste filtro.</div>'; return; }
+  let html = '<div class="grid">';
+  for (const q of qs) {
+    const cs = cropsOf(q.n);
+    html += `<section class="card" data-q="${q.n}">
+      <h3>Questão ${q.n} <span class="pg">${q.page ? 'pág. ' + q.page : ''}${q.status_json ? ' · ' + esc(q.status_json) : ''}</span></h3>
+      ${q.warnings.length ? `<div class="warns">${q.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}</div>` : ''}
+      ${cs.length ? `<div class="tiles">${cs.map(c => tileHtml(c, q.n)).join('')}</div>` : '<div class="qtext" style="padding-top:10px">Sem recorte detectado.</div>'}
+      <div class="qtext"><details><summary>Texto da questão (JSON)</summary>
+        <p>${esc(q.statement || '(vazio)')}</p>
+        ${q.alternatives?.length ? `<ol type="a">${q.alternatives.map(a => `<li>${esc(a.text)}</li>`).join('')}</ol>` : ''}
+        ${q.pdf_text ? `<p class="pdf" title="Texto extraído do PDF nesta questão">PDF: ${esc(q.pdf_text)}</p>` : ''}
+      </details></div>
+      <div class="cardfoot"><button data-new="${q.n}">+ Novo recorte</button></div>
+    </section>`;
+  }
+  html += '</div>';
+  if (M.ignored?.length && FILTER === 'todas') {
+    html += `<div class="sect">Detecções descartadas (${M.ignored.length}) — clique para usar como recorte</div><div class="ign">` +
+      M.ignored.map((g,i) => `<button data-ign="${i}" title="${esc(g.reason)}">p${g.page} · ${esc(g.reason)}</button>`).join('') + '</div>';
+  }
+  main.innerHTML = html;
+  if (SEL) { const t = main.querySelector(`.tile[data-id="${SEL}"]`); if (t) t.classList.add('sel'); }
+}
+
+async function setStatus(ids, status) {
+  const r = await api('/api/status', {prova: PID, ids, status});
+  for (const c of M.crops) if (ids.includes(c.id)) c.status = status;
+  render();
+}
+
+$('#main').addEventListener('click', async e => {
+  const z = e.target.closest('[data-zoom]');
+  if (z) { const c = M.crops.find(c => c.id === z.dataset.zoom); select(c.id); $('#zoomImg').src = imgUrl(c.file, c.v); $('#zoomTitle').textContent = `Questão ${c.questions.join(', ')} · ${roleTxt(c)} · pág. ${c.page}`; $('#mZoom').classList.add('on'); return; }
+  const b = e.target.closest('button'); if (!b) return;
+  const tile = b.closest('.tile');
+  if (tile) {
+    const id = tile.dataset.id, c = M.crops.find(c => c.id === id); select(id);
+    const act = b.dataset.act;
+    if (act === 'aprovado' || act === 'rejeitado') return setStatus([id], c.status === act ? 'pendente' : act);
+    if (act === 'crop') return openCrop({crop: c});
+    if (act === 'path' || act === 'reveal') {
+      const r = await api('/api/reveal', {prova: PID, crop_id: id, only_path: act === 'path'});
+      if (act === 'path') {
+        try { await navigator.clipboard.writeText(r.path); toast('Caminho copiado: ' + r.path, 4000); }
+        catch (err) { prompt('Caminho do arquivo:', r.path); }
+      } else toast('Abrindo a pasta no Explorer…');
+      return;
+    }
+  }
+  if (b.dataset.new) return openCrop({question: +b.dataset.new});
+  if (b.dataset.ign !== undefined) { const g = M.ignored[+b.dataset.ign]; return openCrop({ignored: g}); }
+});
+
+function select(id) {
+  SEL = id; document.querySelectorAll('.tile.sel').forEach(t => t.classList.remove('sel'));
+  const t = document.querySelector(`.tile[data-id="${id}"]`); if (t) { t.classList.add('sel'); t.focus({preventScroll:true}); t.scrollIntoView({block:'nearest'}); }
+}
+
+document.addEventListener('keydown', e => {
+  if (document.querySelector('.modal.on')) {
+    if (e.key === 'Escape') closeModals();
+    if (e.key === 'Enter' && $('#mCrop').classList.contains('on') && !$('#cropSave').disabled) saveCrop();
+    return;
+  }
+  if (['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)) return;
+  const tiles = [...document.querySelectorAll('.tile')]; if (!tiles.length) return;
+  let i = tiles.findIndex(t => t.dataset.id === SEL);
+  const k = e.key.toLowerCase();
+  if (k === 'j' || e.key === 'ArrowRight') { select(tiles[Math.min(tiles.length-1, i+1)].dataset.id); e.preventDefault(); }
+  else if (k === 'k' || e.key === 'ArrowLeft') { select(tiles[Math.max(0, i-1)].dataset.id); e.preventDefault(); }
+  else if (SEL && (k === 'a' || k === 'r')) { const st = k === 'a' ? 'aprovado' : 'rejeitado'; setStatus([SEL], st).then(() => { const n = tiles[i+1]; if (n) select(n.dataset.id); }); }
+  else if (SEL && k === 'c') openCrop({crop: M.crops.find(c => c.id === SEL)});
+  else if (SEL && k === 'z') document.querySelector(`.tile[data-id="${SEL}"] [data-zoom]`)?.click();
+});
+
+document.querySelectorAll('#filters [data-f]').forEach(b => b.onclick = () => {
+  FILTER = b.dataset.f; document.querySelectorAll('#filters [data-f]').forEach(x => x.classList.toggle('on', x === b)); render();
+});
+
+$('#btnBulk').onclick = async () => {
+  const ids = M.crops.filter(c => c.status === 'pendente' && c.confidence >= .85).map(c => c.id);
+  if (!ids.length) return toast('Nenhum pendente com confiança alta.');
+  if (!confirm(`Aprovar ${ids.length} recortes de confiança alta?`)) return;
+  await setStatus(ids, 'aprovado'); toast(`${ids.length} aprovados.`);
+};
+
+$('#btnExport').onclick = async () => {
+  if (!M) return;
+  const n = M.crops.filter(c => c.status === 'aprovado').length;
+  const pend = M.crops.filter(c => c.status === 'pendente').length;
+  if (!n) return toast('Nenhum recorte aprovado para exportar.');
+  const dest = M.pdf.replace(/[\\/][^\\/]+$/, '') + '\\imagens';
+  if (!confirm(`Exportar ${n} recortes aprovados?\n\n• Copia as imagens para:\n  ${dest}\n• Atualiza imagens/has_image no JSON:\n  ${M.json || '(sem JSON vinculado — só copia as imagens)'}\n• Alternativa aprovada como imagem vira "imgA" no texto (padrão do importador)\n• Propaga para as provas irmãs da mesma pasta (mesmo id, ex.: OP1 → OP2)\n• Faz backup do JSON antes (logs/system4_image/backup).\n\nDocumentos sincroniza com o Google Drive: isso vai para produção.${pend ? `\n\nAtenção: ${pend} recortes ainda estão pendentes e NÃO serão exportados.` : ''}`)) return;
+  busy(true, 'Exportando…');
+  try {
+    const r = await api('/api/export', {prova: PID});
+    const irm = Object.entries(r.irmas || {}).map(([f, k]) => `${f.replace('_COMENTADA_LLM.json','')}: ${k}`).join(', ');
+    toast(`Exportado: ${r.imagens_copiadas} arquivos, ${r.questoes} questões no JSON${irm ? ' · provas irmãs atualizadas — ' + irm : ''}.`, 7000);
+    await openProva(PID);
+  }
+  catch(err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); }
+};
+
+// ---------- importar
+$('#btnImport').onclick = async () => {
+  $('#mImport').classList.add('on'); $('#pdfSearch').focus();
+  if (!PDFS.length) PDFS = await api('/api/pdfs');
+  renderPdfs();
+};
+$('#pdfSearch').oninput = renderPdfs;
+function renderPdfs() {
+  const terms = $('#pdfSearch').value.toLowerCase().split(/\s+/).filter(Boolean);
+  const list = PDFS.filter(p => terms.every(t => p.rel.toLowerCase().includes(t))).slice(0, 300);
+  $('#pdfList').innerHTML = list.map(p => `<button data-pdf="${esc(p.path)}"><span style="flex:1">${esc(p.rel)}</span>${p.json ? '<span class="tag">JSON</span>' : '<span class="tag">sem JSON</span>'}${p.processada ? '<span class="tag ok">processada</span>' : ''}</button>`).join('') || '<div class="help">Nada encontrado.</div>';
+}
+$('#pdfList').onclick = async e => {
+  const b = e.target.closest('[data-pdf]'); if (!b) return;
+  closeModals(); busy(true, 'Varrendo o PDF e recortando…');
+  try { const s = await api('/api/process', {pdf: b.dataset.pdf}); PDFS = []; await loadProvas(s.prova_id); toast(`${s.recortes} recortes gerados · ${s.alertas} questões com alerta.`, 4000); }
+  catch(err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); }
+};
+$('#pdfFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  closeModals(); busy(true, 'Enviando e processando…');
+  try {
+    const r = await fetch('/api/upload?name=' + encodeURIComponent(f.name), {method:'POST', body: f});
+    const s = await r.json(); if (!r.ok) throw new Error(s.erro);
+    await loadProvas(s.prova_id); toast(`${s.recortes} recortes gerados.`);
+  } catch(err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); e.target.value = ''; }
+};
+
+// ---------- recorte manual
+let CROP = null, drag = null, selPdf = null;
+function openCrop(o) {
+  CROP = o; selPdf = null; $('#cropSave').disabled = true; $('#selRect').hidden = true;
+  const c = o.crop;
+  const page = c ? c.page : o.ignored ? o.ignored.page : (M.questions[o.question]?.page || 1);
+  $('#cropTitle').textContent = c ? `Recortar de novo · Questão ${c.questions.join(', ')} · ${roleTxt(c)}` : o.ignored ? `Usar detecção descartada (pág. ${page})` : `Novo recorte · Questão ${o.question}`;
+  $('#cropRole').value = c ? c.role : 'enunciado'; $('#cropLetter').value = c?.letter || 'a';
+  $('#cropRole').disabled = !!c; $('#cropLetter').disabled = !!c;
+  $('#cropLetter').style.display = ($('#cropRole').value === 'alt') ? '' : 'none';
+  CROP.page = page;
+  CROP.old = c ? c.rect_pdf : o.ignored ? o.ignored.bbox : null;
+  if (o.ignored) { CROP.question = guessQuestion(page, o.ignored.bbox); }
+  showPage();
+  $('#mCrop').classList.add('on');
+}
+$('#cropRole').onchange = () => $('#cropLetter').style.display = ($('#cropRole').value === 'alt') ? '' : 'none';
+function guessQuestion(page, bbox) {
+  const qs = Object.values(M.questions).filter(q => q.page && q.page <= page).sort((a,b) => b.n - a.n);
+  const n = prompt('Esta imagem pertence a qual questão?', qs[0]?.n || '');
+  return n ? +n : null;
+}
+function pageMeta(n) { return M.pages.find(p => p.n === n); }
+function showPage() {
+  const pm = pageMeta(CROP.page);
+  $('#pgLbl').textContent = `pág. ${CROP.page}/${M.pages.length}`;
+  const img = $('#pageImg');
+  img.onload = () => drawOld();
+  img.src = imgUrl(pm.file);
+  $('#selRect').hidden = true; selPdf = null; $('#cropSave').disabled = true;
+}
+function scale() { const pm = pageMeta(CROP.page), img = $('#pageImg'); return img.clientWidth / pm.pdf_w; }
+function drawOld() {
+  const o = $('#oldRect');
+  const c = CROP.crop;
+  if (CROP.old && (!c || c.page === CROP.page)) { const s = scale(), r = CROP.old; Object.assign(o.style, {display:'block', left: r[0]*s+'px', top: r[1]*s+'px', width:(r[2]-r[0])*s+'px', height:(r[3]-r[1])*s+'px'}); }
+  else o.style.display = 'none';
+}
+$('#pgPrev').onclick = () => { if (CROP.page > 1) { CROP.page--; showPage(); } };
+$('#pgNext').onclick = () => { if (CROP.page < M.pages.length) { CROP.page++; showPage(); } };
+const stage = $('#stage');
+stage.addEventListener('dragstart', e => e.preventDefault());
+stage.addEventListener('pointerdown', e => {
+  if (e.button !== undefined && e.button !== 0) return;
+  e.preventDefault();
+  const b = stage.getBoundingClientRect(); drag = {x: e.clientX - b.left, y: e.clientY - b.top}; try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+  Object.assign($('#selRect').style, {left: drag.x+'px', top: drag.y+'px', width:'0px', height:'0px'}); $('#selRect').hidden = false;
+});
+stage.addEventListener('pointermove', e => {
+  if (!drag) return; const b = stage.getBoundingClientRect();
+  const x = Math.max(0, Math.min(b.width, e.clientX - b.left)), y = Math.max(0, Math.min(b.height, e.clientY - b.top));
+  Object.assign($('#selRect').style, {left: Math.min(x, drag.x)+'px', top: Math.min(y, drag.y)+'px', width: Math.abs(x-drag.x)+'px', height: Math.abs(y-drag.y)+'px'});
+  drag.x2 = x; drag.y2 = y;
+});
+const endDrag = e => {
+  if (!drag) return; const s = scale();
+  if (e && e.clientX !== undefined) { const b = stage.getBoundingClientRect(); drag.x2 = Math.max(0, Math.min(b.width, e.clientX - b.left)); drag.y2 = Math.max(0, Math.min(b.height, e.clientY - b.top)); 
+    Object.assign($('#selRect').style, {left: Math.min(drag.x2, drag.x)+'px', top: Math.min(drag.y2, drag.y)+'px', width: Math.abs(drag.x2-drag.x)+'px', height: Math.abs(drag.y2-drag.y)+'px'}); }
+  if (drag.x2 !== undefined && Math.abs(drag.x2 - drag.x) > 6 && Math.abs(drag.y2 - drag.y) > 6) {
+    selPdf = [Math.min(drag.x, drag.x2)/s, Math.min(drag.y, drag.y2)/s, Math.max(drag.x, drag.x2)/s, Math.max(drag.y, drag.y2)/s];
+    $('#cropSave').disabled = false;
+  }
+  drag = null;
+};
+stage.addEventListener('pointerup', endDrag);
+stage.addEventListener('pointercancel', endDrag);
+$('#cropSave').onclick = saveCrop;
+async function saveCrop() {
+  if (!selPdf) return;
+  const body = {prova: PID, page: CROP.page, rect: selPdf};
+  if (CROP.crop) body.crop_id = CROP.crop.id;
+  else {
+    body.question = CROP.question; body.role = $('#cropRole').value; body.letter = body.role === 'alt' ? $('#cropLetter').value : null;
+    if (!body.question) return toast('Informe a questão.');
+  }
+  busy(true, 'Recortando do PDF…');
+  try {
+    const c = await api('/api/recrop', body);
+    const i = M.crops.findIndex(x => x.id === c.id); if (i >= 0) M.crops[i] = c; else M.crops.push(c);
+    closeModals(); render(); select(c.id); toast('Recorte salvo e aprovado.');
+  } catch(err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); }
+}
+
+function closeModals() { document.querySelectorAll('.modal.on').forEach(m => m.classList.remove('on')); }
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.matches('[data-close]')) closeModals(); }));
+
+loadProvas().catch(err => { $('#main').innerHTML = `<div class="empty">Erro ao carregar: ${esc(err.message)}</div>`; });
+</script>
+</body>
+</html>
