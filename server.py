@@ -338,6 +338,20 @@ class H(BaseHTTPRequestHandler):
                         ds.append(data["id"])
                     engine.save_manifest(wdir(pid), m)
                 return self.send(200, {"ok": True})
+            if u.path == "/api/role":  # troca só o tipo (enunciado / texto-base / alternativa X), sem refazer o recorte
+                role = data["role"]
+                if role not in ("enunciado", "texto_base", "alt") or (role == "alt" and data.get("letter") not in list("abcde")):
+                    return self.send(400, {"erro": "tipo inválido"})
+                with LOCK:
+                    m = load(pid)
+                    c = next(c for c in m["crops"] if c["id"] == data["crop_id"])
+                    if (c["role"], c.get("letter")) != (role, data.get("letter") if role == "alt" else None):
+                        c["role"] = role
+                        c["letter"] = data["letter"] if role == "alt" else None
+                        if c.get("exportado"):
+                            c["exportado"] = False  # o JSON ainda tem o tipo antigo: precisa gravar de novo
+                    engine.save_manifest(wdir(pid), m)
+                return self.send(200, c)
             if u.path == "/api/status":
                 with LOCK:
                     m = load(pid)

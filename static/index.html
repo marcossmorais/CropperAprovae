@@ -99,6 +99,7 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--bd);border-bot
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
 .dot.h{background:var(--ok)} .dot.m{background:var(--wr)} .dot.l{background:var(--bad)}
 .role{font-weight:600;color:var(--tx)}
+select.rolesel{font-weight:600;font-size:12px;padding:1px 4px;border-radius:6px;max-width:100%;cursor:pointer}
 .flags{font-size:11.5px;color:var(--tm);padding:0 7px 4px}
 .acts{display:flex;border-top:1px solid var(--bd)}
 .acts button{flex:1;border:0;border-radius:0;background:transparent;padding:5px 0;font-size:13px}
@@ -235,7 +236,7 @@ pre.raw{background:var(--sf2);border-radius:6px;padding:8px;font-size:11.5px;max
     <button data-f="semimg">Sem imagem</button>
     <button data-f="herdado">Herdadas</button>
     <span class="grow"></span>
-    <span class="help"><kbd>J</kbd>/<kbd>K</kbd> navegar · <kbd>A</kbd> aprovar · <kbd>R</kbd> rejeitar · <kbd>C</kbd> recortar · <kbd>Z</kbd> ampliar · <kbd>P</kbd> páginas · <kbd>N</kbd> novo recorte</span>
+    <span class="help"><kbd>J</kbd>/<kbd>K</kbd> navegar · <kbd>A</kbd> aprovar · <kbd>R</kbd> rejeitar · <kbd>C</kbd> recortar · <kbd>Z</kbd> ampliar · <kbd>E</kbd>/<kbd>1</kbd>–<kbd>5</kbd>/<kbd>T</kbd> tipo · <kbd>P</kbd> páginas · <kbd>N</kbd> novo recorte</span>
   </div>
 </header>
 
@@ -491,7 +492,7 @@ function tileHtml(c, n) {
   const multi = c.questions.length > 1 ? ` · q${c.questions[0]}–${c.questions[c.questions.length-1]}` : '';
   return `<div class="tile ${c.status}" tabindex="0" data-id="${c.id}" data-q="${n}">
     <div class="img" data-zoom="${c.id}"><img loading="lazy" src="${imgUrl(c.file, c.v)}" alt="${esc(roleTxt(c))} da questão ${n}"></div>
-    <div class="meta"><span class="dot ${l}" title="confiança ${lvlTxt[l]} (${c.confidence})"></span><span class="role">${esc(roleTxt(c))}</span><span>p${c.page}${multi}</span>${c.exportado ? '<span class="tag ok ex" title="Já gravado no JSON">gravado</span>' : ''}</div>
+    <div class="meta"><span class="dot ${l}" title="confiança ${lvlTxt[l]} (${c.confidence})"></span>${roleSel(c)}<span>p${c.page}${multi}</span>${c.exportado ? '<span class="tag ok ex" title="Já gravado no JSON">gravado</span>' : ''}</div>
     ${c.flags.length ? `<div class="flags">${esc(c.flags.join(' · '))}</div>` : ''}
     <div class="acts">
       <button class="a" data-act="aprovado" title="Aprovar (A)">✓</button>
@@ -569,6 +570,21 @@ $('#main').addEventListener('click', async e => {
   if (b.dataset.new) return openCrop({question: +b.dataset.new});
   if (b.dataset.ign !== undefined) { const g = M.ignored[+b.dataset.ign]; return openCrop({ignored: g}); }
 });
+const ROLE_OPTS = [['enunciado', 'Enunciado'], ['texto_base', 'Texto-base'], ...'abcde'.split('').map(L => ['alt:' + L, 'Alternativa ' + L.toUpperCase()])];
+const roleVal = c => c.role === 'alt' ? 'alt:' + (c.letter || 'a') : c.role;
+function roleSel(c) {
+  return `<select class="rolesel" data-role="${c.id}" title="Tipo do recorte (atalhos: E enunciado, 1–5 alternativa A–E, T texto-base)">${ROLE_OPTS.map(([v, t]) => `<option value="${v}" ${v === roleVal(c) ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+}
+async function setRole(id, val) {
+  const c = M.crops.find(x => x.id === id); if (!c || roleVal(c) === val) return;
+  const [role, letter] = val.split(':');
+  try {
+    const r = await api('/api/role', {prova: PID, crop_id: id, role, letter: letter || null});
+    Object.assign(c, {role: r.role, letter: r.letter, exportado: r.exportado});
+    render(); select(id, false); toast(`Questão ${c.questions.join(', ')}: agora é ${roleTxt(c)}.`);
+  } catch (err) { toast('Erro: ' + err.message, 6000); render(); }
+}
+$('#main').addEventListener('change', e => { const s = e.target.closest('select[data-role]'); if (s) setRole(s.dataset.role, s.value); });
 $('#main').addEventListener('focusin', e => { const t = e.target.closest('.tile'); if (t && t.dataset.id !== SEL) select(t.dataset.id, false); });
 
 function select(id, scroll = true) {
@@ -663,6 +679,7 @@ document.addEventListener('keydown', e => {
   else if (SEL && (k === 'a' || k === 'r')) { const st = k === 'a' ? 'aprovado' : 'rejeitado'; setStatus([SEL], st).then(() => { const n = tiles[i+1]; if (n) select(n.dataset.id); }); }
   else if (SEL && k === 'c') openCrop({crop: M.crops.find(c => c.id === SEL)});
   else if (SEL && k === 'z') document.querySelector(`.tile[data-id="${SEL}"] [data-zoom]`)?.click();
+  else if (SEL && ['1','2','3','4','5','e','t'].includes(k)) { setRole(SEL, k === 'e' ? 'enunciado' : k === 't' ? 'texto_base' : 'alt:' + 'abcde'[+k - 1]); e.preventDefault(); }
 });
 
 $$('#filters [data-f]').forEach(b => b.onclick = () => {
