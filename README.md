@@ -1,4 +1,4 @@
-# System 4.0 Image (PDFcropper)
+# CropperAprovae (PDFcropper)
 
 Ferramenta local para recortar e revisar as figuras das questões de prova a partir do PDF.
 
@@ -13,13 +13,22 @@ Ferramenta local para recortar e revisar as figuras das questões de prova a par
 ## Uso
 
 **Como aplicativo** (janela própria, sem terminal e sem navegador): `python criar_atalho.py` uma vez cria o atalho
-"System 4.0 Image" na Área de Trabalho e no menu Iniciar. Ele roda `pythonw app.py`, que sobe o servidor numa porta
+"CropperAprovae" na Área de Trabalho e no menu Iniciar. Ele roda `pythonw app.py`, que sobe o servidor numa porta
 livre dentro do próprio processo e abre uma janela nativa (WebView2, que já vem no Windows). Fechou a janela, fechou
-tudo. O `abrir_system4_image.bat` faz o mesmo. Erros ficam em `app.log`.
+tudo. O `abrir_cropperaprovae.bat` faz o mesmo. Erros ficam em `app.log`.
 
-**Como .exe** (sem precisar de Python): baixe o `System4Image.exe` na página de
+**Instalador** (o jeito mais simples): baixe o `CropperAprovae-Setup.exe` na página de
+[Releases](https://github.com/marcossmorais/PDFcropper/releases) e abra. Uma janela pequena pergunta onde instalar e
+qual é a pasta das provas, cria os atalhos (Área de Trabalho e menu Iniciar), confere o WebView2 (baixa o da Microsoft
+se faltar) e, se você marcar, instala a **IA** num ambiente separado (PyTorch para CPU + Docling, ~1,5 GB; precisa de
+internet e de Python 3.10+ no computador). Instala só para o seu usuário, sem pedir administrador, e aparece em
+*Configurações → Aplicativos instalados* para desinstalar (a pergunta sobre apagar os dados vem com "Não" como padrão).
+Para instalar sem janela: `CropperAprovae-Setup.exe --silencioso --dir PASTA --acervo PASTA [--sem-atalhos] [--ia]`.
+Gerar: `python build_exe.py && python build_instalador.py` (sai em `dist/`).
+
+**Como .exe** (sem precisar de Python, sem instalar nada): baixe o `CropperAprovae.exe` na página de
 [Releases](https://github.com/marcossmorais/PDFcropper/releases) e abra. Os dados ficam em
-`%LOCALAPPDATA%\System4Image` (`config.json`, `app.log`, `workspace\`). No `config.json` dá para apontar:
+`%LOCALAPPDATA%\CropperAprovae` (`config.json`, `app.log`, `workspace\`). No `config.json` dá para apontar:
 
 - `"workspace"`: outra área de trabalho (por exemplo `C:\dev\PDFcropper\workspace`, para o .exe e o código-fonte
   verem as mesmas provas);
@@ -27,7 +36,7 @@ tudo. O `abrir_system4_image.bat` faz o mesmo. Erros ficam em `app.log`.
 - `"ia_python"`: o Python do `.venv-ai`, para a segunda opinião por IA (ela não vai dentro do .exe).
 
 Para gerar o .exe: crie um venv limpo `.venv-build` com `pymupdf` (mesma versão do Python principal), `pywebview` e
-`pyinstaller`, e rode `python build_exe.py`. O resultado sai em `dist/System4Image.exe` (~33 MB).
+`pyinstaller`, e rode `python build_exe.py`. O resultado sai em `dist/CropperAprovae.exe` (~33 MB).
 
 **No navegador** (modo de desenvolvimento): `python server.py` (porta 8765, ou `--port`/`PORT`).
 

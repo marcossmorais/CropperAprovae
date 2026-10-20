@@ -1,4 +1,4 @@
-"""System 4.0 Image como aplicativo: janela própria do Windows, sem terminal e sem navegador.
+"""CropperAprovae como aplicativo: janela própria do Windows, sem terminal e sem navegador.
 
 Uso: pythonw app.py   (ou o atalho criado por criar_atalho.bat)
 - Sobe o servidor numa porta livre dentro do próprio processo e abre uma janela nativa (pywebview + WebView2,
@@ -12,6 +12,12 @@ import threading
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+
+if "--desinstalar" in sys.argv:  # chamado por "Aplicativos instalados"; antes de qualquer coisa que crie ou abra arquivos
+    import instalacao
+    instalacao.desinstalar(silencioso="--silencioso" in sys.argv, apagar_dados=True if "--apagar-dados" in sys.argv else None)
+    sys.exit(0)
+
 import paths  # noqa: E402
 
 os.chdir(paths.DATA_DIR)
@@ -44,7 +50,7 @@ def main():
     srv = server.make_server(port)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     url = f"http://127.0.0.1:{port}"
-    print(f"System 4.0 Image em {url}")
+    print(f"CropperAprovae em {url}")
     try:
         import webview
     except ImportError:
@@ -56,7 +62,7 @@ def main():
         except KeyboardInterrupt:
             pass
         return
-    webview.create_window("System 4.0 Image", url, width=1600, height=960, min_size=(900, 600), maximized=True,
+    webview.create_window("CropperAprovae", url, width=1600, height=960, min_size=(900, 600), maximized=True,
                           text_select=True)
     webview.start(private_mode=False, storage_path=os.path.join(paths.DATA_DIR, ".webview"))
     srv.shutdown()

@@ -1,4 +1,4 @@
-"""System 4.0 Image — servidor local da tela de revisão (só biblioteca padrão + PyMuPDF).
+"""CropperAprovae — servidor local da tela de revisão (só biblioteca padrão + PyMuPDF).
 
 Uso: python server.py [--port 8765] [--no-browser]   (para abrir como app: python app.py)
 Abre http://127.0.0.1:8765 — importar PDF, revisar recortes em miniatura, recortar manualmente,
@@ -432,7 +432,7 @@ def main():
     port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else int(os.environ.get("PORT") or 8765)
     srv = make_server(port)
     url = f"http://127.0.0.1:{port}"
-    print(f"System 4.0 Image rodando em {url}  (Ctrl+C para parar)")
+    print(f"CropperAprovae rodando em {url}  (Ctrl+C para parar)")
     if "--no-browser" not in sys.argv:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     srv.serve_forever()

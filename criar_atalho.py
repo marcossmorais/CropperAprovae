@@ -1,4 +1,4 @@
-"""Cria o atalho "System 4.0 Image" na Área de Trabalho (e no menu Iniciar), abrindo app.py sem terminal.
+"""Cria o atalho "CropperAprovae" na Área de Trabalho (e no menu Iniciar), abrindo app.py sem terminal.
 
 Uso: python criar_atalho.py
 """
@@ -51,7 +51,10 @@ def main():
                          capture_output=True, text=True).stdout.splitlines()
     app = os.path.join(HERE, "app.py")
     for folder in filter(None, (x.strip() for x in out)):
-        lnk = os.path.join(folder, "System 4.0 Image.lnk")
+        antigo = os.path.join(folder, "System 4.0 Image.lnk")  # nome até a v1.0.x
+        if os.path.exists(antigo):
+            os.remove(antigo)
+        lnk = os.path.join(folder, "CropperAprovae.lnk")
         shortcut(lnk, pyw, f'"{app}"', HERE, ICO)
         print("atalho criado:", lnk)
 

@@ -1,4 +1,4 @@
-"""System 4.0 Image — motor de detecção e recorte de figuras de questões.
+"""CropperAprovae — motor de detecção e recorte de figuras de questões.
 
 Lê o PDF da prova com PyMuPDF (sem OCR, sem API): acha as âncoras das questões ("73 –"),
 as figuras (imagens embutidas + desenhos vetoriais), descarta fórmulas inline e carimbos,
@@ -6,7 +6,7 @@ associa cada figura à questão dona (ordem de leitura por coluna, textos-base c
 alternativas em imagem), recorta a 150 DPI sem incluir texto alheio (nem a letra vermelha do
 gabarito) e grava um manifest.json para a tela de revisão.
 
-Uso CLI: python scripts/system4_image/engine.py <pdf> [--json <prova_LLM.json>]
+Uso CLI: python engine.py <pdf> [--json <prova_LLM.json>]
 """
 import datetime
 import difflib
