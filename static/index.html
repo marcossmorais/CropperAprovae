@@ -149,18 +149,28 @@ button.iabtn.on{background:var(--ia-s)}
 .tabs .tab{padding:5px 12px;font-weight:600}
 .tabs .tab.on{background:var(--ac);border-color:var(--ac);color:#fff}
 .tabs .tab .n{font-weight:400;opacity:.85}
-.cmprow{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--bd)}
+.grid.cmpgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rev.pages-on .grid.cmpgrid{grid-template-columns:minmax(0,1fr)}
+.cmprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:10px 12px;border-top:1px solid var(--bd)}
 .cmprow:first-of-type{border-top:0}
 .cmprow.done{opacity:.6}
 .cmpside{display:flex;flex-direction:column;gap:4px;min-width:0}
-.cmpside h4{margin:0;font-size:11.5px;color:var(--tm);text-transform:uppercase;letter-spacing:.04em;display:flex;gap:6px;align-items:center}
-.cmpside.ia h4{color:var(--ia)}
+.cmpside h4{margin:0;font-size:11.5px;color:var(--tm);text-transform:uppercase;letter-spacing:.04em;display:flex;gap:2px 6px;align-items:baseline;flex-wrap:wrap}
+.cmpside h4 .help{text-transform:none;letter-spacing:0}
+.cmpside.cmpia h4{color:var(--ia)}
 .cmpimgs{display:flex;flex-wrap:wrap;gap:4px}
 .cmpimg{background:#fff;border:2px solid var(--bd);border-radius:6px;display:flex;align-items:center;justify-content:center;min-height:60px;overflow:hidden;cursor:zoom-in;flex:1 1 90px;max-width:100%}
 .cmpimg img{max-width:100%;max-height:150px;display:block}
 .cmpimg.aprovado{border-color:var(--ok)} .cmpimg.rejeitado{border-color:var(--bad);opacity:.5}
 .cmpimg.iabox{border-color:var(--ia);border-style:dashed}
-.aithumb{background-repeat:no-repeat;max-width:100%}
+.aibox{position:relative;overflow:hidden;width:100%;background:#fff;line-height:0}
+.aibox img{position:absolute;max-width:none!important;max-height:none!important;display:block}
+.aibox .mo{position:absolute;border:2px dashed var(--wr);pointer-events:none}
+.aibox .mi{border-color:var(--ia);border-style:solid}
+.aibox .mi span{background:var(--ia)!important;left:auto!important;right:0}
+.aibox .mo span{position:absolute;top:0;left:0;background:var(--wr);color:#fff;font:600 10px/1.3 sans-serif;padding:0 4px}
+#zoomIA{display:inline-block;max-width:100%}
+#zoomIA .legend{line-height:1.4;font-size:12.5px;color:var(--tm);margin-top:8px}
 .cmpnone{font-size:12px;color:var(--tm);background:var(--sf2);border-radius:6px;padding:16px 8px;text-align:center}
 .cmpacts{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .cmpacts button{padding:3px 10px;font-size:12.5px}
@@ -318,7 +328,7 @@ pre.raw{background:var(--sf2);border-radius:6px;padding:8px;font-size:11.5px;max
   <div class="ft"><span class="help" id="xFoot"></span><span class="grow"></span><button data-close>Cancelar</button><button id="xGo" class="pri">Gravar</button></div>
 </div></div>
 
-<div class="modal" id="mZoom"><div class="box"><div class="hd"><h2 id="zoomTitle"></h2><span class="grow"></span><button data-close>Fechar</button></div><div class="bd zoom" style="text-align:center"><img id="zoomImg" alt=""></div></div></div>
+<div class="modal" id="mZoom"><div class="box"><div class="hd"><h2 id="zoomTitle"></h2><span class="grow"></span><button data-close>Fechar</button></div><div class="bd zoom" style="text-align:center"><img id="zoomImg" alt=""><div id="zoomIA" hidden></div></div></div></div>
 <div class="toast" id="toast"></div>
 <div class="busy" id="busy">Processando…</div>
 
@@ -874,11 +884,15 @@ function compareRows() {
   }
   return rows.sort((a, b) => (a.q ?? 1e9) - (b.q ?? 1e9) || a.page - b.page);
 }
-function aiThumb(page, r) {
-  const pm = pageMeta(page), s = pm.px_w / pm.pdf_w, pad = 3;
-  const x = (r[0] - pad) * s, y = (r[1] - pad) * s, w = (r[2] - r[0] + 2 * pad) * s, h = (r[3] - r[1] + 2 * pad) * s;
-  const k = Math.min(1, 230 / w, 150 / h);
-  return `<div class="aithumb" style="width:${w * k}px;height:${h * k}px;background-image:url('${imgUrl(pm.file)}');background-size:${pm.px_w * k}px ${pm.px_h * k}px;background-position:${-x * k}px ${-y * k}px"></div>`;
+// recorte da página (já renderizada a 150 DPI) em CSS puro: a imagem inteira, deslocada e escalada em %
+function aiThumb(page, r, o = {}) {
+  const pm = pageMeta(page), pad = o.region ? 8 : 3, g = o.region || r;  // region: área mostrada (união motor + IA)
+  const bx = g[0] - pad, by = g[1] - pad, bw = g[2] - g[0] + 2 * pad, bh = g[3] - g[1] + 2 * pad;
+  const maxH = o.maxH || 150, maxW = o.maxW || 400;
+  const w = Math.min(maxW, maxH * bw / bh);
+  const mo = (o.motor || []).map(c => { const q = c.rect_pdf; return `<div class="mo" style="left:${(q[0] - bx) / bw * 100}%;top:${(q[1] - by) / bh * 100}%;width:${(q[2] - q[0]) / bw * 100}%;height:${(q[3] - q[1]) / bh * 100}%"><span>motor</span></div>`; }).join('');
+  const mi = o.region ? `<div class="mo mi" style="left:${(r[0] - bx) / bw * 100}%;top:${(r[1] - by) / bh * 100}%;width:${(r[2] - r[0]) / bw * 100}%;height:${(r[3] - r[1]) / bh * 100}%"><span>IA</span></div>` : '';
+  return `<div class="aibox" style="width:${o.fixed ? w + 'px' : '100%'};max-width:${o.fixed ? '100%' : w + 'px'};aspect-ratio:${bw} / ${bh}"><img src="${imgUrl(pm.file)}" alt="" style="width:${pm.pdf_w / bw * 100}%;left:${-bx / bw * 100}%;top:${-by / bh * 100}%">${mo}${mi}</div>`;
 }
 const stateTxt = {motor: '✓ ficou o do motor', ia: '✓ ficou o da IA', recusado: '✕ recusados'};
 function renderCompare() {
@@ -893,7 +907,7 @@ function renderCompare() {
   if (!rows.length) { main.innerHTML = `<div class="empty">${CMPF === 'pend' ? 'Nada a decidir: motor e IA concordam, ou você já escolheu tudo. 🎉' : 'Nenhum par.'}</div>`; return; }
   const byQ = new Map();
   for (const r of rows) { const k = r.q ?? '?'; if (!byQ.has(k)) byQ.set(k, []); byQ.get(k).push(r); }
-  let html = '<div class="grid">';
+  let html = '<div class="grid cmpgrid">';
   for (const [q, rs] of byQ) {
     const qq = M.questions[q];
     html += `<section class="card" data-q="${q}"><h3>Questão ${q} <span class="pg">${qq?.page ? 'pág. ' + qq.page : ''}</span></h3>`;
@@ -902,7 +916,7 @@ function renderCompare() {
       html += `<div class="cmprow ${r.done ? 'done' : ''}" data-row="${r.id}">
         <div class="cmpside"><h4>Motor ${mt.length ? `<span class="help">${mt.map(c => esc(roleTxt(c))).join(', ')}</span>` : ''}</h4>
           ${mt.length ? `<div class="cmpimgs">${mt.map(c => `<div class="cmpimg ${c.status}" data-zoom="${c.id}" title="${esc(c.status)} · ${esc(c.flags.join(' · '))}"><img loading="lazy" src="${imgUrl(c.file, c.v)}" alt=""></div>`).join('')}</div>` : '<div class="cmpnone">o motor não achou</div>'}</div>
-        <div class="cmpside ia"><h4>IA ${r.box ? `<span class="help">${String(r.box.label).toLowerCase() === 'table' ? 'tabela' : 'figura'} · ${Math.round(r.box.conf * 100)}%${mt.length ? ` · coincide ${Math.round(r.iou * 100)}%` : ''}</span>` : ''}</h4>
+        <div class="cmpside cmpia"><h4>IA ${r.box ? `<span class="help">${String(r.box.label).toLowerCase() === 'table' ? 'tabela' : 'figura'} · ${Math.round(r.box.conf * 100)}%${mt.length ? ` · coincide ${Math.round(r.iou * 100)}%` : ''}</span>` : ''}</h4>
           ${r.daIA ? `<div class="cmpimgs"><div class="cmpimg ${r.daIA.status}" data-zoom="${r.daIA.id}"><img loading="lazy" src="${imgUrl(r.daIA.file, r.daIA.v)}" alt=""></div></div>`
             : r.box ? `<div class="cmpimgs"><div class="cmpimg iabox" data-iazoom="${r.id}">${aiThumb(r.page, r.box.bbox_pdf)}</div></div>` : '<div class="cmpnone">a IA não viu figura aqui</div>'}</div>
         <div class="cmpacts">${r.done ? `<span class="st">${stateTxt[r.state]}</span><span class="grow"></span><button data-cmp="desfazer">Mudar</button>` : `
@@ -952,9 +966,14 @@ $('#main').addEventListener('click', e => {
   if (e.target.id === 'cmpRun') { $('#btnIA').click(); return; }
   const b = e.target.closest('[data-cmp]'); if (b) { e.stopImmediatePropagation(); return cmpAct(b.closest('[data-row]').dataset.row, b.dataset.cmp); }
   const z = e.target.closest('[data-iazoom]');
-  if (z) { e.stopImmediatePropagation(); const r = ROWS.find(x => x.id === z.dataset.iazoom); const pm = pageMeta(r.page);
-    $('#zoomImg').src = imgUrl(pm.file); $('#zoomTitle').textContent = `Página ${r.page} — a caixa da IA está em roxo no painel de páginas`; $('#mZoom').classList.add('on');
-    showPagesPanel(true); scrollToPage(r.page); }
+  if (z) {
+    e.stopImmediatePropagation(); const r = ROWS.find(x => x.id === z.dataset.iazoom);
+    $('#zoomImg').hidden = true; $('#zoomIA').hidden = false;
+    $('#zoomIA').innerHTML = aiThumb(r.page, r.box.bbox_pdf, {maxH: Math.round(innerHeight * .68), maxW: Math.min(1000, innerWidth - 100), motor: r.motor, fixed: true,
+      region: r.motor.reduce((u, c) => [Math.min(u[0], c.rect_pdf[0]), Math.min(u[1], c.rect_pdf[1]), Math.max(u[2], c.rect_pdf[2]), Math.max(u[3], c.rect_pdf[3])], r.box.bbox_pdf.slice())}) +
+      `<div class="legend">${r.motor.length ? 'Laranja tracejado: recorte do motor. ' : ''}Roxo: área da IA (${Math.round(r.box.conf * 100)}% de confiança).</div>`;
+    $('#zoomTitle').textContent = `Questão ${r.q ?? '?'} · área da IA · pág. ${r.page}`; $('#mZoom').classList.add('on');
+  }
 }, true);
 
 // ======================================================================= gravar no JSON
@@ -1145,7 +1164,7 @@ async function saveCrop() {
   finally { busy(false); }
 }
 
-function closeModals() { $$('.modal.on').forEach(m => m.classList.remove('on')); }
+function closeModals() { $$('.modal.on').forEach(m => m.classList.remove('on')); $('#zoomImg').hidden = false; $('#zoomIA').hidden = true; }
 $$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.matches('[data-close]')) closeModals(); }));
 
 // ======================================================================= início
