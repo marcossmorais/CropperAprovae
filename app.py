@@ -11,14 +11,14 @@ import sys
 import threading
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-os.chdir(HERE)
-if not os.environ.get("SYSTEM3_ROOT"):
-    os.environ["SYSTEM3_ROOT"] = os.path.join(os.path.expanduser("~"), "Documents", "CLAUDE", "System3.0")
 sys.path.insert(0, HERE)
+import paths  # noqa: E402
+
+os.chdir(paths.DATA_DIR)
 
 # pythonw não tem console: guarda a saída num log para diagnosticar erros
 if sys.stdout is None or sys.stderr is None:
-    _log = open(os.path.join(HERE, "app.log"), "a", encoding="utf-8", buffering=1)
+    _log = open(os.path.join(paths.DATA_DIR, "app.log"), "a", encoding="utf-8", buffering=1)
     sys.stdout = sys.stderr = _log
 
 import server  # noqa: E402
@@ -58,7 +58,7 @@ def main():
         return
     webview.create_window("System 4.0 Image", url, width=1600, height=960, min_size=(900, 600), maximized=True,
                           text_select=True)
-    webview.start(private_mode=False, storage_path=os.path.join(HERE, ".webview"))
+    webview.start(private_mode=False, storage_path=os.path.join(paths.DATA_DIR, ".webview"))
     srv.shutdown()
 
 

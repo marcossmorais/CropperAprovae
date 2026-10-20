@@ -20,10 +20,12 @@ import unicodedata
 
 import pymupdf
 
-# pasta do acervo (System 3.0, com Documentos/ e logs/): variável SYSTEM3_ROOT; padrão Documents/CLAUDE/System3.0
-ROOT = os.environ.get("SYSTEM3_ROOT") or os.path.join(os.path.expanduser("~"), "Documents", "CLAUDE", "System3.0")
+import paths  # noqa: E402
+
+# acervo do System 3.0 (Documentos/, logs/) e área de trabalho: ver paths.py
+ROOT = paths.ROOT
 DOCS = os.path.join(ROOT, "Documentos")
-WORKSPACE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workspace")
+WORKSPACE = paths.WORKSPACE
 DPI = 150
 ZOOM = DPI / 72.0
 

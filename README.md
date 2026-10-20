@@ -17,6 +17,18 @@ Ferramenta local para recortar e revisar as figuras das questões de prova a par
 livre dentro do próprio processo e abre uma janela nativa (WebView2, que já vem no Windows). Fechou a janela, fechou
 tudo. O `abrir_system4_image.bat` faz o mesmo. Erros ficam em `app.log`.
 
+**Como .exe** (sem precisar de Python): baixe o `System4Image.exe` na página de
+[Releases](https://github.com/marcossmorais/PDFcropper/releases) e abra. Os dados ficam em
+`%LOCALAPPDATA%\System4Image` (`config.json`, `app.log`, `workspace\`). No `config.json` dá para apontar:
+
+- `"workspace"`: outra área de trabalho (por exemplo `C:\dev\PDFcropper\workspace`, para o .exe e o código-fonte
+  verem as mesmas provas);
+- `"acervo"`: a pasta do System 3.0, se não for `Documents\CLAUDE\System3.0`;
+- `"ia_python"`: o Python do `.venv-ai`, para a segunda opinião por IA (ela não vai dentro do .exe).
+
+Para gerar o .exe: crie um venv limpo `.venv-build` com `pymupdf` (mesma versão do Python principal), `pywebview` e
+`pyinstaller`, e rode `python build_exe.py`. O resultado sai em `dist/System4Image.exe` (~33 MB).
+
 **No navegador** (modo de desenvolvimento): `python server.py` (porta 8765, ou `--port`/`PORT`).
 
 ### Telas
@@ -38,6 +50,10 @@ quando ele discorda do motor: **possível figura sem recorte** e **geometria duv
 nunca recorta sozinha: *Usar área da IA* abre o recorte com a área marcada, e *Dispensar* esconde a sugestão. Roda
 sozinha em segundo plano depois de processar uma prova (~1 s por página); o botão *Rodar IA* roda de novo.
 Avaliação e regras: [`docs/avaliacao_hibrido.md`](docs/avaliacao_hibrido.md).
+
+A aba **Motor × IA** mostra, para cada figura, o recorte do motor ao lado do recorte da IA, com *Usar motor*,
+*Usar IA* ou *Recusar os dois* (e *Mudar* para desfazer). O recorte escolhido da IA vira um recorte aprovado com a
+marca "área da IA".
 
 Instalação (venv separado, porque o Docling puxa o PyTorch):
 

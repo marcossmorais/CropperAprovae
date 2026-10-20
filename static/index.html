@@ -144,6 +144,29 @@ button.iabtn.on{background:var(--ia-s)}
 .ov.ia{border:2px dashed var(--ia);background:rgba(124,58,237,.08)}
 .ov.ia span{background:var(--ia)}
 
+/* aba Motor × IA */
+.tabs{display:flex;gap:6px;padding:0 18px 10px;flex-wrap:wrap;align-items:center}
+.tabs .tab{padding:5px 12px;font-weight:600}
+.tabs .tab.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.tabs .tab .n{font-weight:400;opacity:.85}
+.cmprow{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--bd)}
+.cmprow:first-of-type{border-top:0}
+.cmprow.done{opacity:.6}
+.cmpside{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cmpside h4{margin:0;font-size:11.5px;color:var(--tm);text-transform:uppercase;letter-spacing:.04em;display:flex;gap:6px;align-items:center}
+.cmpside.ia h4{color:var(--ia)}
+.cmpimgs{display:flex;flex-wrap:wrap;gap:4px}
+.cmpimg{background:#fff;border:2px solid var(--bd);border-radius:6px;display:flex;align-items:center;justify-content:center;min-height:60px;overflow:hidden;cursor:zoom-in;flex:1 1 90px;max-width:100%}
+.cmpimg img{max-width:100%;max-height:150px;display:block}
+.cmpimg.aprovado{border-color:var(--ok)} .cmpimg.rejeitado{border-color:var(--bad);opacity:.5}
+.cmpimg.iabox{border-color:var(--ia);border-style:dashed}
+.aithumb{background-repeat:no-repeat;max-width:100%}
+.cmpnone{font-size:12px;color:var(--tm);background:var(--sf2);border-radius:6px;padding:16px 8px;text-align:center}
+.cmpacts{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cmpacts button{padding:3px 10px;font-size:12.5px}
+.cmpacts .ia-b{border-color:var(--ia);color:var(--ia)}
+.cmpacts .st{font-size:12px;font-weight:600}
+
 /* ---------- modal */
 .modal{position:fixed;inset:0;background:rgba(10,14,20,.6);display:none;z-index:50;align-items:center;justify-content:center;padding:16px}
 .modal.on{display:flex}
@@ -222,6 +245,12 @@ pre.raw{background:var(--sf2);border-radius:6px;padding:8px;font-size:11.5px;max
     <button data-v="rev" id="btnBulk" title="Aprova todos os recortes pendentes com confiança alta">Aprovar alta confiança</button>
     <button data-v="rev" id="btnExport" class="pri">Gravar no JSON…</button>
     <button id="btnTheme" class="ghost" title="Tema claro/escuro">◐</button>
+  </div>
+  <div class="tabs" id="tabs" data-v="rev">
+    <button class="tab on" data-mode="revisao">Revisão</button>
+    <button class="tab" data-mode="comparar" title="O recorte do motor ao lado do recorte da IA: escolha um, ou recuse os dois">Motor × IA <span class="n" id="cmpN"></span></button>
+    <span class="grow"></span>
+    <span id="cmpFilt" hidden><button data-cf="pend" class="on">A decidir</button> <button data-cf="todas">Todas</button></span>
   </div>
   <div class="filters" id="filters" data-v="rev">
     <button data-f="todas" class="on">Todas</button>
@@ -505,7 +534,8 @@ function tileHtml(c, n) {
 
 function render() {
   SUGS = iaSugs();
-  renderStats(); renderIAbtn();
+  renderStats(); renderIAbtn(); renderTabs();
+  if (MODE === 'comparar') return renderCompare();
   const qs = visibleQuestions();
   const main = $('#main');
   let html = '';
@@ -788,6 +818,144 @@ function applyPreset() {
   Object.assign($('#selRect').style, {left: r[0]*s+'px', top: r[1]*s+'px', width: (r[2]-r[0])*s+'px', height: (r[3]-r[1])*s+'px'});
   $('#selRect').hidden = false; selPdf = r.slice(); syncSave();
 }
+
+
+// ======================================================================= aba Motor × IA
+let MODE = 'revisao', CMPF = 'pend', ROWS = [];
+function renderTabs() {
+  $$('#tabs [data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === MODE));
+  $('#filters').hidden = VIEW !== 'rev' || MODE === 'comparar';
+  $('#cmpFilt').hidden = MODE !== 'comparar';
+  ROWS = compareRows();
+  const pend = ROWS.filter(r => !r.done).length;
+  $('#cmpN').textContent = IA.status === 'pronto' ? `(${pend})` : '';
+}
+$$('#tabs [data-mode]').forEach(b => b.onclick = () => { MODE = b.dataset.mode; window.scrollTo(0, 0); render(); });
+$$('#cmpFilt [data-cf]').forEach(b => b.onclick = () => { CMPF = b.dataset.cf; $$('#cmpFilt [data-cf]').forEach(x => x.classList.toggle('on', x === b)); render(); });
+const boxId = (page, r) => 'b' + page + '_' + r.map(Math.round).join('_');
+// pareia os recortes do motor com as caixas da IA, página por página
+function compareRows() {
+  if (IA.status !== 'pronto' || !M || !IA.pages) return [];
+  const dis = new Set(M.ia_dispensadas || []), ancPages = new Set((M.ancoras || []).map(a => a.page));
+  const rows = [];
+  for (const pm of M.pages) {
+    const page = pm.n; if (!ancPages.has(page)) continue;
+    const boxes = (IA.pages[page] || []).filter(b => { const r = b.bbox_pdf, cy = (r[1] + r[3]) / 2;
+      return b.conf >= .5 && r[2] - r[0] >= 25 && r[3] - r[1] >= 20 && cy > .09 * pm.pdf_h && cy < .94 * pm.pdf_h; });
+    const crops = M.crops.filter(c => c.page === page && c.status !== 'herdado' && (c.bbox_pdf || c.rect_pdf));
+    const by = boxes.map(() => []), free = [];
+    for (const c of crops) {
+      const cr = c.flags.includes('área da IA') || !c.bbox_pdf ? c.rect_pdf : c.bbox_pdf;
+      let bi = -1, bs = 0;
+      boxes.forEach((b, i) => { const sc = inter(cr, b.bbox_pdf) / Math.max(1, Math.min(area(cr), area(b.bbox_pdf))); if (sc > bs) { bs = sc; bi = i; } });
+      if (bi >= 0 && bs >= .5) by[bi].push(c); else free.push(c);
+    }
+    boxes.forEach((b, i) => {
+      // caixa fraca que a IA viu sozinha: só entra com confiança alta e tamanho de figura (mesmas regras do aviso)
+      if (!by[i].length && (b.conf < .7 || b.bbox_pdf[2] - b.bbox_pdf[0] < 40 || b.bbox_pdf[3] - b.bbox_pdf[1] < 30)) return;
+      rows.push({page, box: b, crops: by[i]});
+    });
+    free.forEach(c => rows.push({page, box: null, crops: [c]}));
+  }
+  for (const r of rows) {
+    r.id = r.box ? boxId(r.page, r.box.bbox_pdf) : 'c' + r.crops[0].id;
+    r.q = r.crops[0]?.questions[0] ?? ownerOf(r.page, r.box.bbox_pdf);
+    const motor = r.crops.filter(c => !c.flags.includes('área da IA'));
+    r.motor = motor; r.daIA = r.crops.find(c => c.flags.includes('área da IA'));
+    const dismissed = r.box && dis.has(r.id);
+    const vivos = motor.filter(c => c.status !== 'rejeitado');
+    const motorOk = vivos.length && vivos.every(c => c.status === 'aprovado');
+    const motorOff = motor.every(c => c.status === 'rejeitado');
+    r.iou = r.box && motor.length ? Math.max(...motor.map(c => iou(c.bbox_pdf || c.rect_pdf, r.box.bbox_pdf))) : 0;
+    r.state = r.daIA && r.daIA.status !== 'rejeitado' ? 'ia'
+      : motorOk && (!r.box || dismissed || r.iou >= .6) ? 'motor'
+      : motorOff && (!r.box || dismissed) ? 'recusado' : null;
+    r.done = !!r.state;
+  }
+  return rows.sort((a, b) => (a.q ?? 1e9) - (b.q ?? 1e9) || a.page - b.page);
+}
+function aiThumb(page, r) {
+  const pm = pageMeta(page), s = pm.px_w / pm.pdf_w, pad = 3;
+  const x = (r[0] - pad) * s, y = (r[1] - pad) * s, w = (r[2] - r[0] + 2 * pad) * s, h = (r[3] - r[1] + 2 * pad) * s;
+  const k = Math.min(1, 230 / w, 150 / h);
+  return `<div class="aithumb" style="width:${w * k}px;height:${h * k}px;background-image:url('${imgUrl(pm.file)}');background-size:${pm.px_w * k}px ${pm.px_h * k}px;background-position:${-x * k}px ${-y * k}px"></div>`;
+}
+const stateTxt = {motor: '✓ ficou o do motor', ia: '✓ ficou o da IA', recusado: '✕ recusados'};
+function renderCompare() {
+  const main = $('#main');
+  if (IA.status !== 'pronto') {
+    main.innerHTML = `<div class="empty">${IA.status === 'rodando' ? `A IA está analisando a prova… ${esc(IA.progresso || '')}<br>A comparação aparece aqui quando terminar.` :
+      IA.status === 'indisponivel' ? 'A IA não está instalada (falta o .venv-ai). Veja o README.' :
+      `A IA ainda não analisou esta prova.<br><br><button class="pri" id="cmpRun">Rodar IA agora</button>`}</div>`;
+    return;
+  }
+  const rows = ROWS.filter(r => CMPF === 'todas' || !r.done);
+  if (!rows.length) { main.innerHTML = `<div class="empty">${CMPF === 'pend' ? 'Nada a decidir: motor e IA concordam, ou você já escolheu tudo. 🎉' : 'Nenhum par.'}</div>`; return; }
+  const byQ = new Map();
+  for (const r of rows) { const k = r.q ?? '?'; if (!byQ.has(k)) byQ.set(k, []); byQ.get(k).push(r); }
+  let html = '<div class="grid">';
+  for (const [q, rs] of byQ) {
+    const qq = M.questions[q];
+    html += `<section class="card" data-q="${q}"><h3>Questão ${q} <span class="pg">${qq?.page ? 'pág. ' + qq.page : ''}</span></h3>`;
+    for (const r of rs) {
+      const mt = r.motor;
+      html += `<div class="cmprow ${r.done ? 'done' : ''}" data-row="${r.id}">
+        <div class="cmpside"><h4>Motor ${mt.length ? `<span class="help">${mt.map(c => esc(roleTxt(c))).join(', ')}</span>` : ''}</h4>
+          ${mt.length ? `<div class="cmpimgs">${mt.map(c => `<div class="cmpimg ${c.status}" data-zoom="${c.id}" title="${esc(c.status)} · ${esc(c.flags.join(' · '))}"><img loading="lazy" src="${imgUrl(c.file, c.v)}" alt=""></div>`).join('')}</div>` : '<div class="cmpnone">o motor não achou</div>'}</div>
+        <div class="cmpside ia"><h4>IA ${r.box ? `<span class="help">${String(r.box.label).toLowerCase() === 'table' ? 'tabela' : 'figura'} · ${Math.round(r.box.conf * 100)}%${mt.length ? ` · coincide ${Math.round(r.iou * 100)}%` : ''}</span>` : ''}</h4>
+          ${r.daIA ? `<div class="cmpimgs"><div class="cmpimg ${r.daIA.status}" data-zoom="${r.daIA.id}"><img loading="lazy" src="${imgUrl(r.daIA.file, r.daIA.v)}" alt=""></div></div>`
+            : r.box ? `<div class="cmpimgs"><div class="cmpimg iabox" data-iazoom="${r.id}">${aiThumb(r.page, r.box.bbox_pdf)}</div></div>` : '<div class="cmpnone">a IA não viu figura aqui</div>'}</div>
+        <div class="cmpacts">${r.done ? `<span class="st">${stateTxt[r.state]}</span><span class="grow"></span><button data-cmp="desfazer">Mudar</button>` : `
+          ${mt.length ? `<button data-cmp="motor">✓ Usar motor</button>` : ''}
+          ${r.box ? `<button class="ia-b" data-cmp="ia">✓ Usar IA</button>` : ''}
+          <button data-cmp="recusar">✕ Recusar ${mt.length && r.box ? 'os dois' : ''}</button>
+          <span class="grow"></span><span class="help">pág. ${r.page}</span>`}</div>
+      </div>`;
+    }
+    html += '</section>';
+  }
+  main.innerHTML = html + '</div>';
+}
+async function cmpAct(id, act) {
+  const r = ROWS.find(x => x.id === id); if (!r) return;
+  const pend = r.motor.filter(c => c.status === 'pendente').map(c => c.id);
+  const notRej = r.motor.filter(c => c.status !== 'rejeitado').map(c => c.id);
+  const dismiss = async () => { if (r.box) { for (const i of [r.id, 'n' + r.id.slice(1)]) if (!(M.ia_dispensadas || []).includes(i)) { await api('/api/ia/dispensar', {prova: PID, id: i}); (M.ia_dispensadas = M.ia_dispensadas || []).push(i); } } };
+  busy(true, 'Salvando…');
+  try {
+    if (act === 'motor') {
+      const ids = r.motor.filter(c => c.status !== 'aprovado').map(c => c.id);
+      if (ids.length) await setStatus(ids, 'aprovado');
+      await dismiss();
+    } else if (act === 'ia') {
+      const base = r.motor[0];
+      const c = await api('/api/recrop', {prova: PID, page: r.page, rect: r.box.bbox_pdf, question: r.q, role: base?.role || 'enunciado',
+                                          letter: base?.role === 'alt' ? base.letter : null, origem: 'ia'});
+      M.crops.push(c);
+      if (notRej.length) await setStatus(notRej, 'rejeitado');
+    } else if (act === 'recusar') {
+      if (notRej.length) await setStatus(notRej, 'rejeitado');
+      await dismiss();
+    } else if (act === 'desfazer') {
+      // volta a ficar "a decidir": tira a dispensa, devolve o motor para pendente e rejeita o recorte que veio da IA
+      M.ia_dispensadas = (M.ia_dispensadas || []).filter(i => i !== r.id && i !== 'n' + r.id.slice(1));
+      await api('/api/ia/desfazer', {prova: PID, ids: [r.id, 'n' + r.id.slice(1)]});
+      if (r.daIA) await setStatus([r.daIA.id], 'rejeitado');
+      const back = r.motor.map(c => c.id); if (back.length) await setStatus(back, 'pendente');
+    }
+    render();
+  } catch (err) { toast('Erro: ' + err.message, 6000); }
+  finally { busy(false); }
+}
+$('#main').addEventListener('click', e => {
+  if (MODE !== 'comparar') return;
+  if (e.target.id === 'cmpRun') { $('#btnIA').click(); return; }
+  const b = e.target.closest('[data-cmp]'); if (b) { e.stopImmediatePropagation(); return cmpAct(b.closest('[data-row]').dataset.row, b.dataset.cmp); }
+  const z = e.target.closest('[data-iazoom]');
+  if (z) { e.stopImmediatePropagation(); const r = ROWS.find(x => x.id === z.dataset.iazoom); const pm = pageMeta(r.page);
+    $('#zoomImg').src = imgUrl(pm.file); $('#zoomTitle').textContent = `Página ${r.page} — a caixa da IA está em roxo no painel de páginas`; $('#mZoom').classList.add('on');
+    showPagesPanel(true); scrollToPage(r.page); }
+}, true);
 
 // ======================================================================= gravar no JSON
 let XQ = [], XSEL = new Set(), XIRM = {}, XPREV = null, XT = null;

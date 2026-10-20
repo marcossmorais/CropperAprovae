@@ -19,15 +19,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import paths  # noqa: E402
 import engine  # noqa: E402
 
-STATIC = os.path.join(HERE, "static")
+STATIC = os.path.join(paths.APP_DIR, "static")
 BACKUP_ROOT = os.path.join(engine.ROOT, "logs", "system4_image", "backup")
 SKIP = {".tmp.driveupload", "backup", "legado", "legado_duplicatas", "legado_antigo", "quarentena", "_quarentena",
         "originais_backup", "_quarentena_imagens", "revisao", "md", "imagens", "extracao"}
 LOCK = threading.Lock()
 _pdf_cache = {"list": None}
-CONFIG = os.path.join(HERE, "config.json")
+CONFIG = paths.CONFIG
 
 
 def get_config():
@@ -54,12 +55,15 @@ def set_config(**kw):
 
 
 def pick_folder(initial):
-    """Seletor de pasta nativo do Windows (tkinter em outro processo, para não travar o servidor)."""
-    code = ("import sys,tkinter as t,tkinter.filedialog as f;r=t.Tk();r.withdraw();r.attributes('-topmost',1);"
-            "p=f.askdirectory(initialdir=sys.argv[1],title='Escolha a pasta com as provas');"
-            "sys.stdout.write(p or '')")
-    exe = sys.executable.replace("pythonw.exe", "python.exe")
-    out = subprocess.run([exe, "-c", code, initial], capture_output=True, text=True, encoding="utf-8",
+    """Seletor de pasta nativo do Windows, em outro processo (PowerShell + WinForms) para não travar o servidor.
+    Funciona igual do código-fonte e do .exe (que não tem um python.exe para abrir o tkinter)."""
+    ps = ("Add-Type -AssemblyName System.Windows.Forms;"
+          "$o=New-Object System.Windows.Forms.Form -Property @{TopMost=$true;ShowInTaskbar=$false};"
+          "$d=New-Object System.Windows.Forms.FolderBrowserDialog;"
+          "$d.Description='Escolha a pasta com as provas';$d.SelectedPath=$env:S4I_INICIAL;"
+          "if($d.ShowDialog($o) -eq 'OK'){[Console]::OutputEncoding=[Text.Encoding]::UTF8;$d.SelectedPath}")
+    out = subprocess.run(["powershell", "-NoProfile", "-STA", "-Command", ps], capture_output=True, text=True,
+                         encoding="utf-8", env=dict(os.environ, S4I_INICIAL=initial or ""),
                          creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     p = out.stdout.strip()
     return os.path.normpath(p) if p else None
@@ -139,13 +143,13 @@ def wdir(pid):
 
 
 # ---------------------------------------------------------------- segunda opinião (IA de layout, Docling)
-IA_PY = os.path.join(HERE, ".venv-ai", "Scripts", "python.exe")
+IA_SCRIPT = os.path.join(paths.APP_DIR, "layout_ai.py")
 IA_FILE = "ia_docling.json"
 _ia_procs = {}
 
 
 def ia_available():
-    return os.path.isfile(IA_PY) and os.path.isfile(os.path.join(HERE, "layout_ai.py"))
+    return bool(paths.ia_python()) and os.path.isfile(IA_SCRIPT)
 
 
 def ia_run(pid, force=False):
@@ -161,8 +165,8 @@ def ia_run(pid, force=False):
     m = load(pid)
     log = open(os.path.join(wdir(pid), "ia.log"), "w", encoding="utf-8")
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
-    _ia_procs[pid] = subprocess.Popen([IA_PY, os.path.join(HERE, "layout_ai.py"), m["pdf"], "--backend", "docling",
-                                       "--out", out], stdout=log, stderr=subprocess.STDOUT, env=env, cwd=HERE,
+    _ia_procs[pid] = subprocess.Popen([paths.ia_python(), IA_SCRIPT, m["pdf"], "--backend", "docling",
+                                       "--out", out], stdout=log, stderr=subprocess.STDOUT, env=env, cwd=paths.DATA_DIR,
                                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
                                       | getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0))
     return True
@@ -208,12 +212,14 @@ def summary(m):
     }
 
 
-_engine_mtime = [os.path.getmtime(engine.__file__)]
+_engine_mtime = [None if paths.FROZEN else os.path.getmtime(engine.__file__)]
 
 
 def reload_engine():
-    """Recarrega o motor se o código mudou (evita exportar com versão antiga em memória)."""
+    """Recarrega o motor se o código mudou (evita exportar com versão antiga em memória). No .exe não há o que vigiar."""
     global engine
+    if paths.FROZEN:
+        return
     mt = os.path.getmtime(engine.__file__)
     if mt != _engine_mtime[0]:
         with LOCK:
@@ -330,6 +336,12 @@ class H(BaseHTTPRequestHandler):
             pid = data.get("prova")
             if u.path == "/api/ia/run":
                 return self.send(200, {"ok": ia_run(pid, force=bool(data.get("force")))})
+            if u.path == "/api/ia/desfazer":
+                with LOCK:
+                    m = load(pid)
+                    m["ia_dispensadas"] = [i for i in m.get("ia_dispensadas", []) if i not in set(data["ids"])]
+                    engine.save_manifest(wdir(pid), m)
+                return self.send(200, {"ok": True})
             if u.path == "/api/ia/dispensar":
                 with LOCK:
                     m = load(pid)
@@ -367,6 +379,9 @@ class H(BaseHTTPRequestHandler):
                     c = engine.recrop(wdir(pid), m, int(data["page"]), data["rect"], data.get("crop_id"),
                                       data.get("question"), data.get("role") or ("" if data.get("crop_id") else "enunciado"),
                                       data.get("letter"))
+                    if data.get("origem") == "ia" and "área da IA" not in c["flags"]:
+                        c["flags"].append("área da IA")
+                        engine.save_manifest(wdir(pid), m)
                 return self.send(200, c)
             if u.path == "/api/reveal":
                 m = load(pid)

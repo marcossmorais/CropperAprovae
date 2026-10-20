@@ -5,3 +5,7 @@ config.json
 .webview/
 app.log
 .venv-ai/
+build/
+dist/
+*.spec
+.venv-build/
